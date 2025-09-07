@@ -1,0 +1,77 @@
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to top, #232526, #414345);
+    color: #fff;
+    margin: 0;
+    min-height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+.container {
+    max-width: 400px;
+    margin: 60px auto;
+    background: rgba(0,0,0,0.7);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+ .button-row {
+     display: flex;
+     justify-content: center;
+     gap: 16px;
+     margin-top: 16px;
+ }
+ .thunder-btn {
+     background: linear-gradient(90deg, #f7971e, #ffd200);
+     color: #222;
+     font-weight: bold;
+     font-size: 1.1rem;
+     border: 2px solid #fff700;
+     box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+     transition: transform 0.1s, box-shadow 0.1s;
+ }
+ .thunder-btn:hover {
+     transform: scale(1.08);
+     box-shadow: 0 4px 16px rgba(255, 215, 0, 0.5);
+ }
+h1 {
+    text-align: center;
+    margin-bottom: 24px;
+}
+.controls label {
+    display: block;
+    margin-bottom: 18px;
+ }
+ #lowpassFilter {
+     width: 100%;
+ }
+
+ .range-group {
+     display: flex;
+     flex-direction: column;
+     gap: 8px;
+ }
+ .range-group label {
+     margin-bottom: 0;
+ }
+input[type=range] {
+    width: 100%;
+}
+button {
+    width: 120px;
+    padding: 10px;
+    margin: 0;
+    border: none;
+    border-radius: 6px;
+    background: #3a7bd5;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+button:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
