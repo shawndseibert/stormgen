@@ -12,6 +12,8 @@ const thunderSounds = [
 ];
 
 let rainAudio = null;
+let rainAudio2 = null;
+let rainOverlapTimeout = null;
 let thunderInterval = null;
 let isPlaying = false;
 let lastThunderIndex = -1;
@@ -63,25 +65,99 @@ const playBtn = document.getElementById('playBtn');
 const stopBtn = document.getElementById('stopBtn');
 
 function playRain() {
-    rainAudio = new Audio(rainSoundPath);
-    rainAudio.loop = true;
-    rainAudio.volume = 1; // We'll use gain node for volume
-    // Disconnect previous rain source if any
-    if (rainAudio._rainSource) {
-        try { rainAudio._rainSource.disconnect(); } catch(e) {}
+    // Stop previous rain audios and timeouts
+    if (rainAudio) {
+        rainAudio.pause();
+        rainAudio.currentTime = 0;
+        if (rainAudio._rainSource) {
+            try { rainAudio._rainSource.disconnect(); } catch(e) {}
+        }
     }
+    if (rainAudio2) {
+        rainAudio2.pause();
+        rainAudio2.currentTime = 0;
+        if (rainAudio2._rainSource) {
+            try { rainAudio2._rainSource.disconnect(); } catch(e) {}
+        }
+    }
+    if (rainOverlapTimeout) {
+        clearTimeout(rainOverlapTimeout);
+        rainOverlapTimeout = null;
+    }
+
+    rainAudio = new Audio(rainSoundPath);
+    rainAudio.loop = false;
+    rainAudio.volume = 1;
     const rainSource = audioCtx.createMediaElementSource(rainAudio);
     rainSource.connect(rainGainNode);
     rainAudio._rainSource = rainSource;
     rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
     rainAudio.play();
+
+    rainAudio.addEventListener('loadedmetadata', () => {
+        scheduleRainOverlap();
+    });
+    // If metadata already loaded
+    if (rainAudio.duration && !isNaN(rainAudio.duration)) {
+        scheduleRainOverlap();
+    }
+
+    rainAudio.addEventListener('ended', () => {
+        // Swap and restart
+        if (rainAudio2) {
+            rainAudio = rainAudio2;
+            rainAudio2 = null;
+            scheduleRainOverlap();
+        } else {
+            playRain();
+        }
+    });
+
+    function scheduleRainOverlap() {
+        if (!rainAudio.duration || isNaN(rainAudio.duration)) return;
+        // Overlap 5–10 seconds before end
+        const overlap = 5 + Math.random() * 5;
+        const timeToOverlap = (rainAudio.duration - overlap - rainAudio.currentTime) * 1000;
+        if (timeToOverlap > 0) {
+            rainOverlapTimeout = setTimeout(() => {
+                playRainOverlap();
+            }, timeToOverlap);
+        }
+    }
+
+    function playRainOverlap() {
+        rainAudio2 = new Audio(rainSoundPath);
+        rainAudio2.loop = false;
+        rainAudio2.volume = 1;
+        const rainSource2 = audioCtx.createMediaElementSource(rainAudio2);
+        rainSource2.connect(rainGainNode);
+        rainAudio2._rainSource = rainSource2;
+        rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+        rainAudio2.play();
+        // When overlap ends, do nothing (main rain handles restart)
+    }
 }
 
 function stopRain() {
     if (rainAudio) {
         rainAudio.pause();
         rainAudio.currentTime = 0;
+        if (rainAudio._rainSource) {
+            try { rainAudio._rainSource.disconnect(); } catch(e) {}
+        }
         rainAudio = null;
+    }
+    if (rainAudio2) {
+        rainAudio2.pause();
+        rainAudio2.currentTime = 0;
+        if (rainAudio2._rainSource) {
+            try { rainAudio2._rainSource.disconnect(); } catch(e) {}
+        }
+        rainAudio2 = null;
+    }
+    if (rainOverlapTimeout) {
+        clearTimeout(rainOverlapTimeout);
+        rainOverlapTimeout = null;
     }
 }
 
