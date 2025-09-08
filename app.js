@@ -13,7 +13,6 @@ const thunderSounds = [
 
 let rainAudio = null;
 let rainAudio2 = null;
-let rainOverlapTimeout = null;
 let thunderInterval = null;
 let isPlaying = false;
 let lastThunderIndex = -1;
@@ -39,8 +38,19 @@ rainGainNode.connect(rainEQNode).connect(lowpassFilterNode).connect(audioCtx.des
 // Thunder: gain -> lowpass -> destination
 thunderGainNode.connect(lowpassFilterNode);
 // ...existing code...
-// Ensure sliders and labels match their default values on load
+
+
 window.addEventListener('DOMContentLoaded', () => {
+    const rainVolumeSlider = document.getElementById('rainVolume');
+    const thunderVolumeSlider = document.getElementById('thunderVolume');
+    const thunderMinSlider = document.getElementById('thunderMin');
+    const thunderMaxSlider = document.getElementById('thunderMax');
+    const frequencyLabel = document.getElementById('frequencyLabel');
+    const lowpassFilterSlider = document.getElementById('lowpassFilter');
+    const lowpassLabel = document.getElementById('lowpassLabel');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+
     rainVolumeSlider.value = '0.25';
     thunderVolumeSlider.value = '0.5';
     thunderMinSlider.value = '15';
@@ -48,205 +58,121 @@ window.addEventListener('DOMContentLoaded', () => {
     lowpassFilterSlider.value = '22050';
     lowpassLabel.textContent = lowpassFilterSlider.value + ' Hz';
     frequencyLabel.textContent = `${thunderMinSlider.value}-${thunderMaxSlider.value}s`;
-    // Set gain/filter nodes to match
     rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
     thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
     lowpassFilterNode.frequency.value = lowpassFilterSlider.value;
-});
 
-const rainVolumeSlider = document.getElementById('rainVolume');
-const thunderVolumeSlider = document.getElementById('thunderVolume');
-const thunderMinSlider = document.getElementById('thunderMin');
-const thunderMaxSlider = document.getElementById('thunderMax');
-const frequencyLabel = document.getElementById('frequencyLabel');
-const lowpassFilterSlider = document.getElementById('lowpassFilter');
-const lowpassLabel = document.getElementById('lowpassLabel');
-const playBtn = document.getElementById('playBtn');
-const stopBtn = document.getElementById('stopBtn');
+    function playRain() {
+        // Stop previous rain audios
+        if (rainAudio && rainAudio.stop) {
+            try { rainAudio.stop(); } catch(e) {}
+        }
+        // Load and decode rain sound as AudioBuffer
+        fetch(rainSoundPath)
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                rainAudio = audioCtx.createBufferSource();
+                rainAudio.buffer = audioBuffer;
+                rainAudio.loop = true;
+                rainAudio.connect(rainGainNode);
+                rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+                rainAudio.start(0);
+            })
+            .catch(function(err) {
+                console.error('Rain audio playback failed:', err);
+                alert('Rain audio could not be played. See console for details.');
+            });
+    }
+    function playThunder() {
+        let idx;
+        do {
+            idx = Math.floor(Math.random() * thunderSounds.length);
+        } while (thunderSounds.length > 1 && idx === lastThunderIndex);
+        lastThunderIndex = idx;
+        const sound = thunderSounds[idx];
+        fetch(sound)
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                const thunderSource = audioCtx.createBufferSource();
+                thunderSource.buffer = audioBuffer;
+                thunderSource.connect(thunderGainNode);
+                thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
+                thunderSource.start(0);
+            })
+            .catch(function(err) {
+                console.error('Thunder audio playback failed:', err);
+                alert('Thunder audio could not be played. See console for details.');
+            });
+    }
+    function startStorm() {
+        console.log('Play button clicked');
+        if (isPlaying) return;
+        isPlaying = true;
+        playRain();
+        scheduleThunder();
+        playBtn.disabled = true;
+        stopBtn.disabled = false;
+    }
+    function stopStorm() {
+        console.log('Stop button clicked');
+        isPlaying = false;
+        stopRain();
+        if (thunderInterval) {
+            clearInterval(thunderInterval);
+            thunderInterval = null;
+        }
+        playBtn.disabled = false;
+        stopBtn.disabled = true;
+    }
 
-function playRain() {
-    // Stop previous rain audios and timeouts
-    if (rainAudio) {
-        rainAudio.pause();
-        rainAudio.currentTime = 0;
-        if (rainAudio._rainSource) {
-            try { rainAudio._rainSource.disconnect(); } catch(e) {}
+    function stopRain() {
+        if (rainAudio && rainAudio.stop) {
+            try { rainAudio.stop(); } catch(e) {}
+            try { rainAudio.disconnect(); } catch(e) {}
+            rainAudio = null;
         }
     }
-    if (rainAudio2) {
-        rainAudio2.pause();
-        rainAudio2.currentTime = 0;
-        if (rainAudio2._rainSource) {
-            try { rainAudio2._rainSource.disconnect(); } catch(e) {}
-        }
-    }
-    if (rainOverlapTimeout) {
-        clearTimeout(rainOverlapTimeout);
-        rainOverlapTimeout = null;
+    function scheduleThunder() {
+        // ...existing scheduleThunder code...
     }
 
-    rainAudio = new Audio(rainSoundPath);
-    rainAudio.loop = false;
-    rainAudio.volume = 1;
-    const rainSource = audioCtx.createMediaElementSource(rainAudio);
-    rainSource.connect(rainGainNode);
-    rainAudio._rainSource = rainSource;
-    rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
-    rainAudio.play();
-
-    rainAudio.addEventListener('loadedmetadata', () => {
-        scheduleRainOverlap();
-    });
-    // If metadata already loaded
-    if (rainAudio.duration && !isNaN(rainAudio.duration)) {
-        scheduleRainOverlap();
-    }
-
-    rainAudio.addEventListener('ended', () => {
-        // Swap and restart
-        if (rainAudio2) {
-            rainAudio = rainAudio2;
-            rainAudio2 = null;
-            scheduleRainOverlap();
-        } else {
-            playRain();
-        }
-    });
-
-    function scheduleRainOverlap() {
-        if (!rainAudio.duration || isNaN(rainAudio.duration)) return;
-        // Overlap 5–10 seconds before end
-        const overlap = 5 + Math.random() * 5;
-        const timeToOverlap = (rainAudio.duration - overlap - rainAudio.currentTime) * 1000;
-        if (timeToOverlap > 0) {
-            rainOverlapTimeout = setTimeout(() => {
-                playRainOverlap();
-            }, timeToOverlap);
-        }
-    }
-
-    function playRainOverlap() {
-        rainAudio2 = new Audio(rainSoundPath);
-        rainAudio2.loop = false;
-        rainAudio2.volume = 1;
-        const rainSource2 = audioCtx.createMediaElementSource(rainAudio2);
-        rainSource2.connect(rainGainNode);
-        rainAudio2._rainSource = rainSource2;
+    rainVolumeSlider.addEventListener('input', () => {
         rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
-        rainAudio2.play();
-        // When overlap ends, do nothing (main rain handles restart)
-    }
-}
-
-    if (rainAudio) {
-        rainAudio.pause();
-        rainAudio.currentTime = 0;
-        if (rainAudio._rainSource) {
-            try { rainAudio._rainSource.disconnect(); } catch(e) {}
-        }
-        rainAudio = null;
-function startStorm() {
-    }
-    if (rainAudio2) {
-        rainAudio2.pause();
-        rainAudio2.currentTime = 0;
-        if (rainAudio2._rainSource) {
-            try { rainAudio2._rainSource.disconnect(); } catch(e) {}
-        }
-        rainAudio2 = null;
-    }
-    if (rainOverlapTimeout) {
-        clearTimeout(rainOverlapTimeout);
-        rainOverlapTimeout = null;
-    }
-}
-
-function playThunder() {
-    // Pick a thunder sound, avoiding the last one
-    let idx;
-    do {
-        idx = Math.floor(Math.random() * thunderSounds.length);
-    } while (thunderSounds.length > 1 && idx === lastThunderIndex);
-    lastThunderIndex = idx;
-    const sound = thunderSounds[idx];
-    const thunderAudio = new Audio(sound);
-    thunderAudio.volume = 1; // We'll use gain node for volume
-    const thunderSource = audioCtx.createMediaElementSource(thunderAudio);
-    thunderSource.connect(thunderGainNode);
-    thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
-    thunderAudio.play();
-}
-
-function startStorm() {
-    if (isPlaying) return;
-    isPlaying = true;
-    playRain();
-    scheduleThunder();
-    playBtn.disabled = true;
-    stopBtn.disabled = false;
-}
-
-function stopStorm() {
-    isPlaying = false;
-    stopRain();
-    clearInterval(thunderInterval);
-    playBtn.disabled = false;
-    stopBtn.disabled = true;
-}
-
-function scheduleThunder() {
-    clearTimeout(thunderInterval);
-    function thunderTimeout() {
-        if (!isPlaying) return;
-        let min = parseInt(thunderMinSlider.value, 10);
-        let max = parseInt(thunderMaxSlider.value, 10);
-        if (min > max) [min, max] = [max, min];
-        const next = Math.floor(Math.random() * (max - min + 1) + min) * 1000;
+    });
+    lowpassFilterSlider.addEventListener('input', () => {
+        lowpassLabel.textContent = lowpassFilterSlider.value + ' Hz';
+        const cutoff = parseFloat(lowpassFilterSlider.value);
+        lowpassFilterNode.frequency.value = cutoff;
+        const min = parseFloat(lowpassFilterSlider.min);
+        const max = parseFloat(lowpassFilterSlider.max);
+        const boost = 8 * (1 - (cutoff - min) / (max - min));
+        rainEQNode.gain.value = boost;
+    });
+    thunderVolumeSlider.addEventListener('input', () => {
+        // Thunder volume is set per thunder sound
+    });
+    thunderMinSlider.addEventListener('input', () => {
+        let min = thunderMinSlider.value;
+        let max = thunderMaxSlider.value;
+        if (parseInt(min) > parseInt(max)) [min, max] = [max, min];
+        frequencyLabel.textContent = `${min}-${max}s`;
+        if (isPlaying) scheduleThunder();
+    });
+    thunderMaxSlider.addEventListener('input', () => {
+        let min = thunderMinSlider.value;
+        let max = thunderMaxSlider.value;
+        if (parseInt(min) > parseInt(max)) [min, max] = [max, min];
+        frequencyLabel.textContent = `${min}-${max}s`;
+        if (isPlaying) scheduleThunder();
+    });
+    playBtn.addEventListener('click', startStorm);
+    stopBtn.addEventListener('click', stopStorm);
+    document.getElementById('thunderBtn').addEventListener('click', () => {
         playThunder();
-        thunderInterval = setTimeout(thunderTimeout, next);
-    }
-    // Schedule first thunder after a random interval, not immediately
-    let min = parseInt(thunderMinSlider.value, 10);
-    let max = parseInt(thunderMaxSlider.value, 10);
-    if (min > max) [min, max] = [max, min];
-    const first = Math.floor(Math.random() * (max - min + 1) + min) * 1000;
-    thunderInterval = setTimeout(thunderTimeout, first);
-}
+    });
+});
 
-rainVolumeSlider.addEventListener('input', () => {
-    rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
-});
-lowpassFilterSlider.addEventListener('input', () => {
-    lowpassLabel.textContent = lowpassFilterSlider.value + ' Hz';
-    const cutoff = parseFloat(lowpassFilterSlider.value);
-    lowpassFilterNode.frequency.value = cutoff;
-    // As cutoff goes down, boost rain low-mid more (max +8dB at min, 0dB at max)
-    const min = parseFloat(lowpassFilterSlider.min);
-    const max = parseFloat(lowpassFilterSlider.max);
-    const boost = 8 * (1 - (cutoff - min) / (max - min));
-    rainEQNode.gain.value = boost;
-});
-thunderVolumeSlider.addEventListener('input', () => {
-    // Thunder volume is set per thunder sound
-});
-thunderMinSlider.addEventListener('input', () => {
-    let min = thunderMinSlider.value;
-    let max = thunderMaxSlider.value;
-    if (parseInt(min) > parseInt(max)) [min, max] = [max, min];
-    frequencyLabel.textContent = `${min}-${max}s`;
-    if (isPlaying) scheduleThunder();
-});
-thunderMaxSlider.addEventListener('input', () => {
-    let min = thunderMinSlider.value;
-    let max = thunderMaxSlider.value;
-    if (parseInt(min) > parseInt(max)) [min, max] = [max, min];
-    frequencyLabel.textContent = `${min}-${max}s`;
-    if (isPlaying) scheduleThunder();
-});
-playBtn.addEventListener('click', startStorm);
-stopBtn.addEventListener('click', stopStorm);
-document.getElementById('thunderBtn').addEventListener('click', () => {
-    playThunder();
-});
-playBtn.addEventListener('click', startStorm);
-stopBtn.addEventListener('click', stopStorm);
+
+
