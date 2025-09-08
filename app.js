@@ -138,7 +138,6 @@ function playRain() {
     }
 }
 
-function stopRain() {
     if (rainAudio) {
         rainAudio.pause();
         rainAudio.currentTime = 0;
@@ -146,6 +145,7 @@ function stopRain() {
             try { rainAudio._rainSource.disconnect(); } catch(e) {}
         }
         rainAudio = null;
+function startStorm() {
     }
     if (rainAudio2) {
         rainAudio2.pause();
