@@ -15,6 +15,8 @@
         <div class="controls">
             <label>Rain Volume
                 <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0.25">
+                <br>
+                <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:4px; font-size:0.9em; padding:2px 8px;">Mute Birds</button>
             </label>
             <label>Thunder Volume
                 <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="0.5">
@@ -39,6 +41,7 @@
             <button id="playBtn">Play Storm</button>
             <button id="stopBtn" disabled>Stop</button>
             <button id="thunderBtn" class="thunder-btn">⚡ Thunder!</button>
+            <!-- birdsMuteBtn moved under Rain Volume -->
         </div>
     </div>
     <script src="app.js"></script>

@@ -38,11 +38,6 @@ rainEQNode.gain.value = 0;
 let rainGainNode = audioCtx.createGain();
 let thunderGainNode = audioCtx.createGain();
 
-// Birds lowpass filter
-const birdsLowpassNode = audioCtx.createBiquadFilter();
-birdsLowpassNode.type = 'lowpass';
-birdsLowpassNode.frequency.value = lowpassFilterNode.frequency.value;
-
 birdsGainNode = audioCtx.createGain();
 birdsGainNode.gain.value = 0;
 
@@ -50,8 +45,8 @@ birdsGainNode.gain.value = 0;
 rainGainNode.connect(rainEQNode).connect(lowpassFilterNode).connect(audioCtx.destination);
 // Thunder: gain -> lowpass -> destination
 thunderGainNode.connect(lowpassFilterNode);
-// Birds: gain -> destination
-birdsGainNode.connect(birdsLowpassNode).connect(audioCtx.destination);
+// Birds: gain -> lowpass -> destination
+birdsGainNode.connect(lowpassFilterNode);
 // ...existing code...
 
 
@@ -65,6 +60,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const lowpassLabel = document.getElementById('lowpassLabel');
     const playBtn = document.getElementById('playBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const birdsMuteBtn = document.getElementById('birdsMuteBtn');
 
     rainVolumeSlider.value = '0.25';
     thunderVolumeSlider.value = '0.5';
@@ -77,12 +73,28 @@ window.addEventListener('DOMContentLoaded', () => {
     thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
     lowpassFilterNode.frequency.value = lowpassFilterSlider.value;
 
-    // Load birds sound buffer once
+    // Birds mute toggle logic
+    let birdsMuted = false;
+    let birdsPrevVolume = 0.3; // Default birds volume
+    birdsMuteBtn.addEventListener('click', () => {
+        if (!birdsMuted) {
+            birdsPrevVolume = birdsGainNode.gain.value;
+            stopBirds(); // Stop all birds audio
+            birdsMuted = true;
+            birdsMuteBtn.textContent = 'Unmute Birds';
+        } else {
+            birdsMuted = false;
+            birdsMuteBtn.textContent = 'Mute Birds';
+            birdsGainNode.gain.value = birdsPrevVolume;
+            playBirds(); // Resume birds audio
+        }
+    });
     fetch(birdsSoundPath)
         .then(response => response.arrayBuffer())
         .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
         .then(buffer => {
             birdsBuffer = buffer;
+            playBirds();
         })
         .catch(function(err) {
             console.error('Birds audio playback failed:', err);
@@ -139,14 +151,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function playBirds() {
-        stopBirds();
-        if (!birdsBuffer) return;
-        birdsAudio = audioCtx.createBufferSource();
-        birdsAudio.buffer = birdsBuffer;
-        birdsAudio.loop = true;
-        birdsAudio.connect(birdsGainNode);
-        birdsAudio.start(0);
-        updateBirdsVolume();
+    stopBirds();
+    if (!birdsBuffer) return;
+    birdsAudio = audioCtx.createBufferSource();
+    birdsAudio.buffer = birdsBuffer;
+    birdsAudio.loop = true;
+    // Connect birdsAudio to birdsGainNode only
+    birdsAudio.connect(birdsGainNode);
+    birdsAudio.start(0);
+    updateBirdsVolume();
     }
 
     function stopBirds() {
@@ -273,7 +286,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const max = parseFloat(lowpassFilterSlider.max);
         const boost = 8 * (1 - (cutoff - min) / (max - min));
         rainEQNode.gain.value = boost;
-    birdsLowpassNode.frequency.value = cutoff;
     });
     thunderVolumeSlider.addEventListener('input', () => {
         // Thunder volume is set per thunder sound
