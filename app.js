@@ -110,9 +110,13 @@ window.addEventListener('DOMContentLoaded', () => {
     ytVolume.value = ytInitialVolume;
 
     ytPlayBtn.addEventListener('click', () => {
-        if (ytReady) {
+        const url = ytLinkInput.value.trim();
+        const videoId = extractYouTubeId(url);
+        if (ytReady && videoId) {
             ytPlayer.playVideo();
-                pauseDefaultMusic();
+            pauseDefaultMusic();
+        } else {
+            playDefaultMusic();
         }
     });
         // Removed duplicate ytLoadBtn event listener
@@ -123,14 +127,18 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     ytPauseBtn.addEventListener('click', () => {
-        if (ytReady) {
+        if (ytReady && ytPlayer.getVideoData && ytPlayer.getVideoData().video_id) {
             ytPlayer.pauseVideo();
+        } else {
+            pauseDefaultMusic();
         }
     });
 
     ytStopBtn.addEventListener('click', () => {
-        if (ytReady) {
+        if (ytReady && ytPlayer.getVideoData && ytPlayer.getVideoData().video_id) {
             ytPlayer.stopVideo(); // Only stop, do not seek to start
+        } else {
+            stopDefaultMusic();
         }
     });
 });
