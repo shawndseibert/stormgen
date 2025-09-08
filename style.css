@@ -35,6 +35,15 @@ body {
  .thunder-btn:hover {
      transform: scale(1.08);
      box-shadow: 0 4px 16px rgba(255, 215, 0, 0.5);
+}
+
+.thunder-btn.active {
+    background: linear-gradient(90deg, #fff700, #f7971e);
+    color: #fff;
+    box-shadow: 0 0 24px 8px #ffd200, 0 2px 8px rgba(255, 215, 0, 0.5);
+    border-color: #fff;
+    transform: scale(1.12);
+}
  }
 h1 {
     text-align: center;

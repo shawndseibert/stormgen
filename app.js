@@ -117,6 +117,12 @@ window.addEventListener('DOMContentLoaded', () => {
         } while (thunderSounds.length > 1 && idx === lastThunderIndex);
         lastThunderIndex = idx;
         const sound = thunderSounds[idx];
+        // Light up thunder button
+        const thunderBtn = document.getElementById('thunderBtn');
+        if (thunderBtn) {
+            thunderBtn.classList.add('active');
+            setTimeout(() => thunderBtn.classList.remove('active'), 700);
+        }
         fetch(sound)
             .then(response => response.arrayBuffer())
             .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
@@ -166,7 +172,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const min = parseFloat(thunderMinSlider.value);
         const max = parseFloat(thunderMaxSlider.value);
         const nextDelay = min * 1000 + Math.random() * (max - min) * 1000;
-        setTimeout(() => {
+        window.thunderTimeout = setTimeout(() => {
             if (!isPlaying) return;
             playThunder();
             scheduleThunder();
@@ -193,14 +199,20 @@ window.addEventListener('DOMContentLoaded', () => {
         let max = thunderMaxSlider.value;
         if (parseInt(min) > parseInt(max)) [min, max] = [max, min];
         frequencyLabel.textContent = `${min}-${max}s`;
-        if (isPlaying) scheduleThunder();
+        if (isPlaying) {
+            if (window.thunderTimeout) clearTimeout(window.thunderTimeout);
+            scheduleThunder();
+        }
     });
     thunderMaxSlider.addEventListener('input', () => {
         let min = thunderMinSlider.value;
         let max = thunderMaxSlider.value;
         if (parseInt(min) > parseInt(max)) [min, max] = [max, min];
         frequencyLabel.textContent = `${min}-${max}s`;
-        if (isPlaying) scheduleThunder();
+        if (isPlaying) {
+            if (window.thunderTimeout) clearTimeout(window.thunderTimeout);
+            scheduleThunder();
+        }
     });
     playBtn.addEventListener('click', startStorm);
     stopBtn.addEventListener('click', stopStorm);
