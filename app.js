@@ -1,3 +1,96 @@
+    // YouTube link input logic
+    const ytLinkInput = document.getElementById('ytLinkInput');
+    const ytLoadBtn = document.getElementById('ytLoadBtn');
+
+    function extractYouTubeId(url) {
+        // Handles various YouTube URL formats
+        const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[1].length === 11) ? match[1] : null;
+    }
+
+    ytLoadBtn.addEventListener('click', () => {
+        const url = ytLinkInput.value.trim();
+        const videoId = extractYouTubeId(url);
+        if (ytReady && videoId) {
+            ytPlayer.loadVideoById(videoId);
+        } else {
+            alert('Please enter a valid YouTube link.');
+        }
+    });
+// --- YouTube Player Integration ---
+let ytPlayer;
+let ytReady = false;
+let ytInitialVolume = 50;
+
+// Load YouTube IFrame API
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+document.body.appendChild(tag);
+
+window.onYouTubeIframeAPIReady = function() {
+    ytPlayer = new YT.Player('ytPlayer', {
+        height: '0',
+        width: '0',
+    videoId: 'l0E3pgm2M_I', // Default video
+        playerVars: {
+            autoplay: 0,
+            controls: 0,
+            modestbranding: 1,
+            rel: 0,
+        },
+        events: {
+            'onReady': function(event) {
+                ytReady = true;
+                ytPlayer.setVolume(ytInitialVolume);
+            }
+        }
+    });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    // ...existing code...
+    // YouTube controls
+    const ytPlayBtn = document.getElementById('ytPlayBtn');
+    const ytPauseBtn = document.getElementById('ytPauseBtn');
+    const ytStopBtn = document.getElementById('ytStopBtn');
+    const ytVolume = document.getElementById('ytVolume');
+
+    // Set YouTube volume slider to default value on load
+    ytVolume.value = ytInitialVolume;
+
+    ytPlayBtn.addEventListener('click', () => {
+        if (ytReady) {
+            ytPlayer.playVideo();
+        }
+    });
+
+    ytLoadBtn.addEventListener('click', () => {
+        const url = ytLinkInput.value.trim();
+        const videoId = extractYouTubeId(url);
+        if (ytReady && videoId) {
+            ytPlayer.loadVideoById(videoId);
+            ytLinkInput.value = '';
+        } else {
+            alert('Please enter a valid YouTube link.');
+        }
+    });
+    ytVolume.addEventListener('input', (e) => {
+        if (ytReady) ytPlayer.setVolume(Number(e.target.value));
+    });
+
+    ytPauseBtn.addEventListener('click', () => {
+        if (ytReady) {
+            ytPlayer.pauseVideo();
+        }
+    });
+
+    ytStopBtn.addEventListener('click', () => {
+        if (ytReady) {
+            ytPlayer.stopVideo(); // Only stop, do not seek to start
+        }
+    });
+});
 // Rain and thunder sound paths
 const rainSoundPath = 'sounds/rain/rain-sound-188158.mp3';
 const birdsSoundPath = 'sounds/birds/birds-19624.mp3';
@@ -233,6 +326,10 @@ window.addEventListener('DOMContentLoaded', () => {
         isPlaying = true;
         playRain();
         scheduleThunder();
+        // Play YouTube music if ready
+        if (ytReady) {
+            ytPlayer.playVideo();
+        }
         playBtn.disabled = true;
         stopBtn.disabled = false;
     }

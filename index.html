@@ -13,6 +13,24 @@
                     <img src="thunderstorm.svg" alt="Thunderstorm Icon" class="storm-icon">
             </div>
         <div class="controls">
+            <!-- YouTube Link Input -->
+            <div id="youtube-link-area" style="margin-bottom:8px;">
+                <label for="ytLinkInput">YouTube Link:</label>
+                <input type="text" id="ytLinkInput" placeholder="Paste YouTube URL here" style="width:220px;" value="https://youtu.be/4unfhTQDs2g">
+                <button id="ytLoadBtn">Load Video</button>
+            </div>
+            <!-- Hidden YouTube Player Controls -->
+            <div id="youtube-controls" style="margin-bottom:12px;">
+                <button id="ytPlayBtn">Play</button>
+                <button id="ytPauseBtn">Pause</button>
+                <button id="ytStopBtn">Stop</button>
+                <label style="margin-left:8px;">YouTube Volume
+                    <input type="range" id="ytVolume" min="0" max="100" value="50" style="width:100px;">
+                </label>
+            </div>
+            <div style="display:none;">
+                <div id="ytPlayer"></div>
+            </div>
             <label>Rain Volume
                 <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0.25">
                 <br>
