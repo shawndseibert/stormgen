@@ -1,5 +1,6 @@
 // Rain and thunder sound paths
 const rainSoundPath = 'sounds/rain/rain-sound-188158.mp3';
+const birdsSoundPath = 'sounds/birds/birds-19624.mp3';
 const thunderSounds = [
     'sounds/thunder/clean-thunder-69077.mp3',
     'sounds/thunder/dry-thunder-364468.mp3',
@@ -11,12 +12,16 @@ const thunderSounds = [
     'sounds/thunder/thunder-307513.mp3'
 ];
 
+// let rainAudio = null; // Removed duplicate declaration
 let rainAudio = null;
 let rainAudio2 = null;
+let birdsAudio = null;
+let birdsGainNode = null;
+let birdsBuffer = null;
+let birdsFadeInterval = null;
 let thunderInterval = null;
 let isPlaying = false;
 let lastThunderIndex = -1;
-
 // Web Audio API context and filter
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const lowpassFilterNode = audioCtx.createBiquadFilter();
@@ -33,10 +38,20 @@ rainEQNode.gain.value = 0;
 let rainGainNode = audioCtx.createGain();
 let thunderGainNode = audioCtx.createGain();
 
+// Birds lowpass filter
+const birdsLowpassNode = audioCtx.createBiquadFilter();
+birdsLowpassNode.type = 'lowpass';
+birdsLowpassNode.frequency.value = lowpassFilterNode.frequency.value;
+
+birdsGainNode = audioCtx.createGain();
+birdsGainNode.gain.value = 0;
+
 // Rain: gain -> EQ -> lowpass -> destination
 rainGainNode.connect(rainEQNode).connect(lowpassFilterNode).connect(audioCtx.destination);
 // Thunder: gain -> lowpass -> destination
 thunderGainNode.connect(lowpassFilterNode);
+// Birds: gain -> destination
+birdsGainNode.connect(birdsLowpassNode).connect(audioCtx.destination);
 // ...existing code...
 
 
@@ -61,6 +76,17 @@ window.addEventListener('DOMContentLoaded', () => {
     rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
     thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
     lowpassFilterNode.frequency.value = lowpassFilterSlider.value;
+
+    // Load birds sound buffer once
+    fetch(birdsSoundPath)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+        .then(buffer => {
+            birdsBuffer = buffer;
+        })
+        .catch(function(err) {
+            console.error('Birds audio playback failed:', err);
+        });
 
     function playRain() {
         // Stop previous rain audios
@@ -104,11 +130,61 @@ window.addEventListener('DOMContentLoaded', () => {
                     };
                 }
                 scheduleRainOverlap();
+                playBirds();
             })
             .catch(function(err) {
                 console.error('Rain audio playback failed:', err);
                 alert('Rain audio could not be played. See console for details.');
             });
+    }
+
+    function playBirds() {
+        stopBirds();
+        if (!birdsBuffer) return;
+        birdsAudio = audioCtx.createBufferSource();
+        birdsAudio.buffer = birdsBuffer;
+        birdsAudio.loop = true;
+        birdsAudio.connect(birdsGainNode);
+        birdsAudio.start(0);
+        updateBirdsVolume();
+    }
+
+    function stopBirds() {
+        if (birdsAudio && birdsAudio.stop) {
+            try { birdsAudio.stop(); } catch(e) {}
+            try { birdsAudio.disconnect(); } catch(e) {}
+            birdsAudio = null;
+        }
+        if (birdsFadeInterval) {
+            clearInterval(birdsFadeInterval);
+            birdsFadeInterval = null;
+        }
+        birdsGainNode.gain.value = 0;
+    }
+
+    function updateBirdsVolume() {
+        // Fade birds in/out based on rain volume
+        const rainVol = parseFloat(rainVolumeSlider.value);
+        let target = 0;
+        if (rainVol < 0.5) {
+            // Fade in as rain gets quieter
+            target = 1 - (rainVol / 0.5); // 1 at 0, 0 at 0.5
+        } else {
+            target = 0;
+        }
+        // Smooth fade
+        const FADE_SPEED = 0.02;
+        if (birdsFadeInterval) clearInterval(birdsFadeInterval);
+        birdsFadeInterval = setInterval(() => {
+            let current = birdsGainNode.gain.value;
+            if (Math.abs(current - target) < FADE_SPEED) {
+                birdsGainNode.gain.value = target;
+                clearInterval(birdsFadeInterval);
+                birdsFadeInterval = null;
+            } else {
+                birdsGainNode.gain.value += (target - current) * FADE_SPEED;
+            }
+        }, 30);
     }
     function playThunder() {
         let idx;
@@ -151,6 +227,7 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('Stop button clicked');
         isPlaying = false;
         stopRain();
+    stopBirds();
         if (thunderInterval) {
             clearInterval(thunderInterval);
             thunderInterval = null;
@@ -164,6 +241,11 @@ window.addEventListener('DOMContentLoaded', () => {
             try { rainAudio.stop(); } catch(e) {}
             try { rainAudio.disconnect(); } catch(e) {}
             rainAudio = null;
+        }
+        if (rainAudio2 && rainAudio2.stop) {
+            try { rainAudio2.stop(); } catch(e) {}
+            try { rainAudio2.disconnect(); } catch(e) {}
+            rainAudio2 = null;
         }
     }
     function scheduleThunder() {
@@ -180,7 +262,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     rainVolumeSlider.addEventListener('input', () => {
-        rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+    rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+    updateBirdsVolume();
     });
     lowpassFilterSlider.addEventListener('input', () => {
         lowpassLabel.textContent = lowpassFilterSlider.value + ' Hz';
@@ -190,6 +273,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const max = parseFloat(lowpassFilterSlider.max);
         const boost = 8 * (1 - (cutoff - min) / (max - min));
         rainEQNode.gain.value = boost;
+    birdsLowpassNode.frequency.value = cutoff;
     });
     thunderVolumeSlider.addEventListener('input', () => {
         // Thunder volume is set per thunder sound
