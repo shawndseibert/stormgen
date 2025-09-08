@@ -161,7 +161,16 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
     function scheduleThunder() {
-        // ...existing scheduleThunder code...
+        // Schedule thunder at random intervals between min and max
+        if (!isPlaying) return;
+        const min = parseFloat(thunderMinSlider.value);
+        const max = parseFloat(thunderMaxSlider.value);
+        const nextDelay = min * 1000 + Math.random() * (max - min) * 1000;
+        setTimeout(() => {
+            if (!isPlaying) return;
+            playThunder();
+            scheduleThunder();
+        }, nextDelay);
     }
 
     rainVolumeSlider.addEventListener('input', () => {
