@@ -19,6 +19,30 @@
         }
     });
 // --- YouTube Player Integration ---
+// Local default music setup
+const defaultMusicPath = 'sounds/music/SARAH VAUGHAN  1944-1946 (1997)(FULL ALBUM).mp3';
+let defaultMusicAudio = null;
+let isYouTubePlaying = false;
+
+function playDefaultMusic() {
+    if (!defaultMusicAudio) {
+        defaultMusicAudio = new Audio(defaultMusicPath);
+        defaultMusicAudio.loop = true;
+    }
+    defaultMusicAudio.volume = 0.5;
+    defaultMusicAudio.play();
+}
+
+function pauseDefaultMusic() {
+    if (defaultMusicAudio) defaultMusicAudio.pause();
+}
+
+function stopDefaultMusic() {
+    if (defaultMusicAudio) {
+        defaultMusicAudio.pause();
+        defaultMusicAudio.currentTime = 0;
+    }
+}
 let ytPlayer;
 let ytReady = false;
 let ytInitialVolume = 50;
@@ -30,9 +54,8 @@ document.body.appendChild(tag);
 
 window.onYouTubeIframeAPIReady = function() {
     ytPlayer = new YT.Player('ytPlayer', {
-        height: '0',
-        width: '0',
-    videoId: 'l0E3pgm2M_I', // Default video
+        height: '1',
+        width: '1',
         playerVars: {
             autoplay: 0,
             controls: 0,
@@ -43,7 +66,34 @@ window.onYouTubeIframeAPIReady = function() {
             'onReady': function(event) {
                 ytReady = true;
                 ytPlayer.setVolume(ytInitialVolume);
+                    // Play default music on load
+                    playDefaultMusic();
+            },
+            'onStateChange': function(event) {
+                const ytPlayBtn = document.getElementById('ytPlayBtn');
+                // 1 = playing, 2 = paused, 0 = ended, 5 = cued
+                if (ytPlayBtn) {
+                    if (event.data === 1) {
+                        ytPlayBtn.classList.add('music-playing');
+                            isYouTubePlaying = true;
+                            pauseDefaultMusic();
+                    } else {
+                        ytPlayBtn.classList.remove('music-playing');
+                            if (isYouTubePlaying && (event.data === 2 || event.data === 0)) {
+                                isYouTubePlaying = false;
+                                playDefaultMusic();
+                            }
+                    }
+                }
             }
+                ,
+                'onError': function(event) {
+                    let msg = 'YouTube video cannot be played.';
+                    if (event.data === 101 || event.data === 150) {
+                        msg += ' This video is restricted from embedding.';
+                    }
+                    alert(msg);
+                }
         }
     });
 }
@@ -62,21 +112,14 @@ window.addEventListener('DOMContentLoaded', () => {
     ytPlayBtn.addEventListener('click', () => {
         if (ytReady) {
             ytPlayer.playVideo();
+                pauseDefaultMusic();
         }
     });
-
-    ytLoadBtn.addEventListener('click', () => {
-        const url = ytLinkInput.value.trim();
-        const videoId = extractYouTubeId(url);
-        if (ytReady && videoId) {
-            ytPlayer.loadVideoById(videoId);
-            ytLinkInput.value = '';
-        } else {
-            alert('Please enter a valid YouTube link.');
-        }
-    });
+        // Removed duplicate ytLoadBtn event listener
     ytVolume.addEventListener('input', (e) => {
-        if (ytReady) ytPlayer.setVolume(Number(e.target.value));
+    const vol = Number(e.target.value);
+    if (ytReady) ytPlayer.setVolume(vol);
+    if (defaultMusicAudio) defaultMusicAudio.volume = vol / 100;
     });
 
     ytPauseBtn.addEventListener('click', () => {
@@ -236,6 +279,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 scheduleRainOverlap();
                 playBirds();
+                // Turn Play Storm button green when rain starts
+                const playBtn = document.getElementById('playBtn');
+                if (playBtn) playBtn.classList.add('music-playing');
             })
             .catch(function(err) {
                 console.error('Rain audio playback failed:', err);
@@ -326,9 +372,17 @@ window.addEventListener('DOMContentLoaded', () => {
         isPlaying = true;
         playRain();
         scheduleThunder();
-        // Play YouTube music if ready
-        if (ytReady) {
+        // Play YouTube music only if a video is loaded, otherwise play default music
+        if (ytReady && ytPlayer.getVideoData && ytPlayer.getVideoData().video_id) {
             ytPlayer.playVideo();
+            // Fallback: retry if not playing after 500ms
+            setTimeout(() => {
+                if (ytPlayer.getPlayerState && ytPlayer.getPlayerState() !== 1) {
+                    ytPlayer.playVideo();
+                }
+            }, 500);
+        } else {
+            playDefaultMusic();
         }
         playBtn.disabled = true;
         stopBtn.disabled = false;
@@ -357,6 +411,9 @@ window.addEventListener('DOMContentLoaded', () => {
             try { rainAudio2.disconnect(); } catch(e) {}
             rainAudio2 = null;
         }
+        // Remove green from Play Storm button when rain stops
+        const playBtn = document.getElementById('playBtn');
+        if (playBtn) playBtn.classList.remove('music-playing');
     }
     function scheduleThunder() {
         // Schedule thunder at random intervals between min and max
@@ -364,6 +421,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const min = parseFloat(thunderMinSlider.value);
         const max = parseFloat(thunderMaxSlider.value);
         const nextDelay = min * 1000 + Math.random() * (max - min) * 1000;
+        if (window.thunderTimeout) clearTimeout(window.thunderTimeout);
         window.thunderTimeout = setTimeout(() => {
             if (!isPlaying) return;
             playThunder();
@@ -408,6 +466,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
     playBtn.addEventListener('click', startStorm);
+    // Add CSS for green button when music is playing
+    const style = document.createElement('style');
+    style.textContent = `.music-playing { background-color: #2ecc40 !important; color: #fff !important; }`;
+    document.head.appendChild(style);
     stopBtn.addEventListener('click', stopStorm);
     document.getElementById('thunderBtn').addEventListener('click', () => {
         playThunder();
