@@ -41,8 +41,8 @@ thunderGainNode.connect(lowpassFilterNode);
 // ...existing code...
 // Ensure sliders and labels match their default values on load
 window.addEventListener('DOMContentLoaded', () => {
-    rainVolumeSlider.value = '0.5';
-    thunderVolumeSlider.value = '0.7';
+    rainVolumeSlider.value = '0.25';
+    thunderVolumeSlider.value = '0.5';
     thunderMinSlider.value = '15';
     thunderMaxSlider.value = '60';
     lowpassFilterSlider.value = '22050';
