@@ -17,6 +17,22 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
+
+.title-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 18px;
+    justify-content: flex-end;
+}
+
+.storm-icon {
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 8px #222);
+}
+
  .button-row {
      display: flex;
      justify-content: center;
@@ -44,7 +60,7 @@ body {
     border-color: #fff;
     transform: scale(1.12);
 }
- }
+
 h1 {
     text-align: center;
     margin-bottom: 24px;
