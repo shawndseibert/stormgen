@@ -67,17 +67,43 @@ window.addEventListener('DOMContentLoaded', () => {
         if (rainAudio && rainAudio.stop) {
             try { rainAudio.stop(); } catch(e) {}
         }
+        if (rainAudio2 && rainAudio2.stop) {
+            try { rainAudio2.stop(); } catch(e) {}
+        }
         // Load and decode rain sound as AudioBuffer
         fetch(rainSoundPath)
             .then(response => response.arrayBuffer())
             .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
             .then(audioBuffer => {
-                rainAudio = audioCtx.createBufferSource();
-                rainAudio.buffer = audioBuffer;
-                rainAudio.loop = true;
-                rainAudio.connect(rainGainNode);
-                rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
-                rainAudio.start(0);
+                function scheduleRainOverlap() {
+                    // Pick random overlap between 5 and 10 seconds
+                    const overlap = 5 + Math.random() * 5;
+                    const duration = audioBuffer.duration;
+                    // Start first rain
+                    rainAudio = audioCtx.createBufferSource();
+                    rainAudio.buffer = audioBuffer;
+                    rainAudio.loop = false;
+                    rainAudio.connect(rainGainNode);
+                    rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+                    rainAudio.start(0);
+                    // Schedule second rain to start before first ends
+                    setTimeout(() => {
+                        rainAudio2 = audioCtx.createBufferSource();
+                        rainAudio2.buffer = audioBuffer;
+                        rainAudio2.loop = false;
+                        rainAudio2.connect(rainGainNode);
+                        rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+                        rainAudio2.start(0);
+                        // When second finishes, reschedule
+                        rainAudio2.onended = scheduleRainOverlap;
+                    }, (duration - overlap) * 1000);
+                    // When first finishes, disconnect
+                    rainAudio.onended = () => {
+                        try { rainAudio.disconnect(); } catch(e) {}
+                        rainAudio = null;
+                    };
+                }
+                scheduleRainOverlap();
             })
             .catch(function(err) {
                 console.error('Rain audio playback failed:', err);
