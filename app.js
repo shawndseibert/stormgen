@@ -102,6 +102,146 @@ window.onYouTubeIframeAPIReady = function() {
 
 window.addEventListener('DOMContentLoaded', () => {
     // ...existing code...
+    // Rain emoji logic
+    const rainEmojiContainer = document.getElementById('rain-emoji-container');
+    const rainVolumeSlider = document.getElementById('rainVolume');
+    let rainActive = false;
+    let rainDrops = [];
+    let rainDropAnimFrame = null;
+    const MAX_DROPS = 64;
+
+    function createRainDrops(count) {
+        // Only add/remove drops as needed, keep existing drops
+        const titleRow = document.querySelector('.title-row');
+        const width = titleRow.offsetWidth;
+        const titleRowHeight = titleRow.offsetHeight;
+        const dropLifetime = 2000; // ms
+        const frameRate = 1000 / 60; // ~16.67ms per frame
+        const frames = dropLifetime / frameRate;
+        const startY = -60;
+        const endY = titleRowHeight + 20;
+        const distance = endY - startY;
+        const fixedSpeed = distance / frames;
+        const minSpacing = 32; // Minimum pixel spacing between drops
+        let existingX = rainDrops.map(d => d._x);
+        let dropsToAdd = count - rainDrops.length;
+        if (dropsToAdd <= 0) return;
+        let added = 0;
+    let spawnInterval = 4000 / Math.max(1, count - rainDrops.length); // Spread new drops over 4 seconds
+        function spawnOneDrop() {
+            let tries = 0;
+            let x;
+            let valid = false;
+            while (!valid && tries < 20) {
+                x = Math.random() * (width - minSpacing);
+                valid = existingX.every(existing => Math.abs(existing - x) >= minSpacing);
+                tries++;
+            }
+            if (!valid) {
+                x = Math.random() * (width - minSpacing);
+            }
+            const drop = document.createElement('span');
+            drop.className = 'rain-drop';
+            drop.textContent = '💧';
+            drop._x = x;
+            drop._y = startY;
+            drop._speed = fixedSpeed;
+            drop.style.left = Math.round(drop._x) + 'px';
+            drop.style.top = Math.round(drop._y) + 'px';
+            rainEmojiContainer.appendChild(drop);
+            rainDrops.push(drop);
+            existingX.push(x);
+            added++;
+            if (added < dropsToAdd) {
+                setTimeout(spawnOneDrop, spawnInterval);
+            }
+        }
+        spawnOneDrop();
+    // Do NOT remove drops when lowering count; let them finish falling
+    }
+
+    function animateRainDrops() {
+        if (!rainActive) return;
+        const titleRow = document.querySelector('.title-row');
+        const height = titleRow.offsetHeight;
+    const rainVol = parseFloat(rainVolumeSlider.value);
+    const startY = -60;
+    const endY = height + 20;
+    // Use a single DOM update per frame for smoother animation
+        for (let i = rainDrops.length - 1; i >= 0; i--) {
+            const drop = rainDrops[i];
+            drop._y += drop._speed;
+        }
+        // Batch update DOM after all positions are calculated
+        for (let i = rainDrops.length - 1; i >= 0; i--) {
+            const drop = rainDrops[i];
+            drop.style.top = Math.round(drop._y) + 'px';
+            drop.style.left = Math.round(drop._x) + 'px';
+            drop.style.opacity = Math.max(0.2, Math.min(0.9, rainVol + 0.2));
+            if (drop._y > endY) {
+                // Remove drop from DOM and array
+                if (drop.parentNode === rainEmojiContainer) rainEmojiContainer.removeChild(drop);
+                rainDrops.splice(i, 1);
+            }
+        }
+        // If we need more drops, add them (never reset existing drops)
+        const desiredCount = rainVol === 0 ? 0 : Math.max(2, Math.round(rainVol * MAX_DROPS));
+        if (rainActive && rainDrops.length < desiredCount) {
+            createRainDrops(desiredCount);
+        }
+        rainDropAnimFrame = requestAnimationFrame(animateRainDrops);
+    }
+
+    function showRainEmojis() {
+        if (rainActive) return;
+        rainActive = true;
+        rainEmojiContainer.style.display = 'block';
+        const rainVol = parseFloat(rainVolumeSlider.value);
+        const dropCount = rainVol === 0 ? 0 : Math.max(2, Math.round(rainVol * MAX_DROPS));
+        if (dropCount === 0) {
+            rainEmojiContainer.innerHTML = '';
+            rainDrops = [];
+            rainEmojiContainer.style.display = 'none';
+            return;
+        }
+        createRainDrops(dropCount);
+        animateRainDrops();
+    }
+
+    function hideRainEmojis() {
+        rainActive = false;
+        rainEmojiContainer.style.display = 'none';
+        rainEmojiContainer.innerHTML = '';
+        rainDrops = [];
+        if (rainDropAnimFrame) {
+            cancelAnimationFrame(rainDropAnimFrame);
+            rainDropAnimFrame = null;
+        }
+    }
+
+    rainVolumeSlider.addEventListener('input', () => {
+        if (rainActive) {
+            const rainVol = parseFloat(rainVolumeSlider.value);
+            if (rainVol === 0) {
+                // Don't spawn new drops, let existing drops finish
+                rainEmojiContainer.style.display = rainDrops.length ? 'block' : 'none';
+                // Do not add or remove drops
+            } else {
+                const dropCount = Math.max(2, Math.round(rainVol * MAX_DROPS));
+                rainEmojiContainer.style.display = 'block';
+                if (dropCount > rainDrops.length) {
+                    createRainDrops(dropCount);
+                }
+                // Do NOT remove drops when lowering count; let them finish falling
+            }
+        }
+    });
+
+    // Hook into storm start/stop
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    playBtn.addEventListener('click', showRainEmojis);
+    stopBtn.addEventListener('click', hideRainEmojis);
     // Music controls (default MP3)
     const musicPlayBtn = document.getElementById('musicPlayBtn');
     const musicPauseBtn = document.getElementById('musicPauseBtn');
