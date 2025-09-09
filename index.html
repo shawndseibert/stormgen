@@ -13,47 +13,64 @@
                     <img src="thunderstorm.svg" alt="Thunderstorm Icon" class="storm-icon">
             </div>
         <div class="controls">
-            <!-- YouTube Link Input -->
-            <div id="youtube-link-area" style="margin-bottom:8px;">
-                <label for="ytLinkInput">YouTube Link:</label>
-                <input type="text" id="ytLinkInput" placeholder="Paste YouTube URL here" style="width:220px;" value="https://youtu.be/4unfhTQDs2g">
-                <button id="ytLoadBtn">Load Video</button>
-            </div>
-            <!-- Hidden YouTube Player Controls -->
-            <div id="youtube-controls" style="margin-bottom:12px;">
-                <button id="ytPlayBtn">Play</button>
-                <button id="ytPauseBtn">Pause</button>
-                <button id="ytStopBtn">Stop</button>
-                <label style="margin-left:8px;">YouTube Volume
-                    <input type="range" id="ytVolume" min="0" max="100" value="50" style="width:100px;">
+            <details open>
+                <summary>Rain Options</summary>
+                <label>Rain Volume
+                    <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0.25">
                 </label>
-            </div>
-            <div style="display:none;">
-                <div id="ytPlayer"></div>
-            </div>
-            <label>Rain Volume
-                <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0.25">
-                <br>
-                <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:4px; font-size:0.9em; padding:2px 8px;">Mute Birds</button>
-            </label>
-            <label>Thunder Volume
-                <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="0.5">
-            </label>
-            <label>Lowpass Filter
-                <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
-                <span id="lowpassLabel">22050 Hz</span>
-            </label>
-            <label>Thunder Frequency
-                <div class="range-group">
-                    <label>Min Interval
-                        <input type="range" id="thunderMin" min="5" max="60" step="1" value="15">
+            </details>
+            <details open>
+                <summary>Thunder Options</summary>
+                <div class="thunder-options-label">
+                    <label>Thunder Volume
+                        <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="0.5">
                     </label>
-                    <label>Max Interval
-                        <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
-                    </label>
-                    <span id="frequencyLabel">15-20s</span>
+                    <div class="thunder-options-frequency">
+                        <label>Thunder Frequency</label>
+                        <label>Min Interval
+                            <input type="range" id="thunderMin" min="5" max="60" step="1" value="15">
+                        </label>
+                        <label>Max Interval
+                            <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
+                        </label>
+                        <span id="frequencyLabel">15-20s</span>
+                    </div>
                 </div>
-            </label>
+            </details>
+            <details open>
+                <summary>Audio Filter</summary>
+                <label>Lowpass Filter
+                    <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
+                    <span id="lowpassLabel">22050 Hz</span>
+                </label>
+            </details>
+            <details open>
+                <summary>Sounds</summary>
+                <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:4px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
+            </details>
+            <details open>
+                <summary>Music</summary>
+                <div id="music-controls">
+                    <div id="music-controls-row">
+                        <button id="musicPlayBtn">Play</button>
+                        <button id="musicPauseBtn">Pause</button>
+                        <button id="musicStopBtn">Stop</button>
+                    </div>
+                    <label for="musicVolume">Music Volume
+                        <input type="range" id="musicVolume" min="0" max="100" value="50">
+                    </label>
+                </div>
+            </details>
+            <details open>
+                <summary>YouTube Link</summary>
+                <div id="youtube-link-area" style="margin-bottom:8px;">
+                    <input type="text" id="ytLinkInput" placeholder="Paste YouTube URL here" style="width:220px;" value="https://youtu.be/4unfhTQDs2g">
+                    <button id="ytLoadBtn">Load Video</button>
+                </div>
+                <div style="display:none;">
+                    <div id="ytPlayer"></div>
+                </div>
+            </details>
         </div>
         <div class="button-row">
             <button id="playBtn">Play Storm</button>
@@ -63,5 +80,25 @@
         </div>
     </div>
     <script src="app.js"></script>
+    <script>
+    // Collapsible panels state persistence
+    document.addEventListener('DOMContentLoaded', function() {
+        const detailsPanels = document.querySelectorAll('.controls details');
+        detailsPanels.forEach((panel, idx) => {
+            const key = 'stormgen_panel_' + idx;
+            // Restore state from localStorage
+            const saved = localStorage.getItem(key);
+            if (saved === 'open') {
+                panel.open = true;
+            } else {
+                panel.open = false;
+            }
+            // Listen for toggle events
+            panel.addEventListener('toggle', function() {
+                localStorage.setItem(key, panel.open ? 'open' : 'closed');
+            });
+        });
+    });
+    </script>
 </body>
 </html>

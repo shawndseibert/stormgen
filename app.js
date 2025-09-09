@@ -14,6 +14,8 @@
         const videoId = extractYouTubeId(url);
         if (ytReady && videoId) {
             ytPlayer.loadVideoById(videoId);
+            ytPlayer.playVideo(); // Auto-play after loading
+            pauseDefaultMusic();
         } else {
             alert('Please enter a valid YouTube link.');
         }
@@ -100,46 +102,31 @@ window.onYouTubeIframeAPIReady = function() {
 
 window.addEventListener('DOMContentLoaded', () => {
     // ...existing code...
-    // YouTube controls
-    const ytPlayBtn = document.getElementById('ytPlayBtn');
-    const ytPauseBtn = document.getElementById('ytPauseBtn');
-    const ytStopBtn = document.getElementById('ytStopBtn');
-    const ytVolume = document.getElementById('ytVolume');
+    // Music controls (default MP3)
+    const musicPlayBtn = document.getElementById('musicPlayBtn');
+    const musicPauseBtn = document.getElementById('musicPauseBtn');
+    const musicStopBtn = document.getElementById('musicStopBtn');
+    const musicVolume = document.getElementById('musicVolume');
 
-    // Set YouTube volume slider to default value on load
-    ytVolume.value = ytInitialVolume;
+    // Set music volume slider to default value on load
+    musicVolume.value = 50;
+    if (defaultMusicAudio) defaultMusicAudio.volume = 0.5;
 
-    ytPlayBtn.addEventListener('click', () => {
-        const url = ytLinkInput.value.trim();
-        const videoId = extractYouTubeId(url);
-        if (ytReady && videoId) {
-            ytPlayer.playVideo();
-            pauseDefaultMusic();
-        } else {
-            playDefaultMusic();
-        }
-    });
-        // Removed duplicate ytLoadBtn event listener
-    ytVolume.addEventListener('input', (e) => {
-    const vol = Number(e.target.value);
-    if (ytReady) ytPlayer.setVolume(vol);
-    if (defaultMusicAudio) defaultMusicAudio.volume = vol / 100;
+    musicPlayBtn.addEventListener('click', () => {
+        playDefaultMusic();
     });
 
-    ytPauseBtn.addEventListener('click', () => {
-        if (ytReady && ytPlayer.getVideoData && ytPlayer.getVideoData().video_id) {
-            ytPlayer.pauseVideo();
-        } else {
-            pauseDefaultMusic();
-        }
+    musicPauseBtn.addEventListener('click', () => {
+        pauseDefaultMusic();
     });
 
-    ytStopBtn.addEventListener('click', () => {
-        if (ytReady && ytPlayer.getVideoData && ytPlayer.getVideoData().video_id) {
-            ytPlayer.stopVideo(); // Only stop, do not seek to start
-        } else {
-            stopDefaultMusic();
-        }
+    musicStopBtn.addEventListener('click', () => {
+        stopDefaultMusic();
+    });
+
+    musicVolume.addEventListener('input', (e) => {
+        const vol = Number(e.target.value);
+        if (defaultMusicAudio) defaultMusicAudio.volume = vol / 100;
     });
 });
 // Rain and thunder sound paths
@@ -220,19 +207,31 @@ window.addEventListener('DOMContentLoaded', () => {
     // Birds mute toggle logic
     let birdsMuted = false;
     let birdsPrevVolume = 0.3; // Default birds volume
+    function updateBirdsMuteBtn() {
+        if (birdsMuted) {
+            birdsMuteBtn.textContent = 'Unmute Birds';
+            birdsMuteBtn.style.background = '#c0392b'; // Red
+            birdsMuteBtn.style.color = '#fff';
+        } else {
+            birdsMuteBtn.textContent = 'Mute Birds';
+            birdsMuteBtn.style.background = '#27ae60'; // Play Storm button green
+            birdsMuteBtn.style.color = '#fff';
+        }
+    }
     birdsMuteBtn.addEventListener('click', () => {
         if (!birdsMuted) {
             birdsPrevVolume = birdsGainNode.gain.value;
             stopBirds(); // Stop all birds audio
             birdsMuted = true;
-            birdsMuteBtn.textContent = 'Unmute Birds';
         } else {
             birdsMuted = false;
-            birdsMuteBtn.textContent = 'Mute Birds';
             birdsGainNode.gain.value = birdsPrevVolume;
             playBirds(); // Resume birds audio
         }
+        updateBirdsMuteBtn();
     });
+    // Set initial button color
+    updateBirdsMuteBtn();
     fetch(birdsSoundPath)
         .then(response => response.arrayBuffer())
         .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
