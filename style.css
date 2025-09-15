@@ -246,6 +246,15 @@ button {
     cursor: pointer;
     transition: background 0.2s;
 }
+/* Storm Toggle Button States */
+#stormToggleBtn.storm-start {
+    background: #27ae60 !important; /* Green */
+    color: #fff !important;
+}
+#stormToggleBtn.storm-stop {
+    background: #c0392b !important; /* Red */
+    color: #fff !important;
+}
 button:disabled {
     background: #555;
     cursor: not-allowed;

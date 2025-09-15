@@ -22,14 +22,165 @@
     });
 // --- YouTube Player Integration ---
 // Local default music setup
+// Music lowpass filter node
+// Music lowpass filter node
+// ...audioCtx will be defined later...
+
+// ...existing code...
+
+window.addEventListener('DOMContentLoaded', () => {
+    const ytWarningClose = document.getElementById('ytWarningClose');
+    if (ytWarningClose) {
+        ytWarningClose.addEventListener('click', () => {
+            ytWarning.style.display = 'none';
+        });
+    }
+    const ytWarning = document.getElementById('ytWarning');
+    // YouTube audio routing
+    const ytAudio = document.getElementById('ytAudio');
+    let ytAudioSource = null;
+
+    function playYouTubeAudioStream(url) {
+        // This expects a direct audio stream URL, not a YouTube page URL
+        ytAudio.src = url;
+        ytAudio.crossOrigin = 'anonymous';
+        ytAudio.load();
+        ytAudio.play();
+        if (!ytAudioSource) {
+            ytAudioSource = audioCtx.createMediaElementSource(ytAudio);
+            ytAudioSource.connect(musicLowpassNode);
+            musicLowpassNode.connect(musicDryGain).connect(audioCtx.destination);
+            musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(audioCtx.destination);
+        }
+    }
+
+    // Intercept YouTube link loading to use ytAudio
+    ytLoadBtn.addEventListener('click', () => {
+        const url = ytLinkInput.value.trim();
+        // If the URL is a direct audio stream, use ytAudio
+        if (url.match(/\.mp3$|\.m4a$|\.webm$|\.ogg$/)) {
+            playYouTubeAudioStream(url);
+            pauseDefaultMusic();
+            ytWarning.style.display = 'none';
+        } else {
+            // Fallback: use iframe player (effects won't work)
+            if (ytReady && extractYouTubeId(url)) {
+                ytPlayer.loadVideoById(extractYouTubeId(url));
+                ytPlayer.playVideo();
+                pauseDefaultMusic();
+                ytWarning.style.display = '';
+            } else {
+                ytWarning.style.display = '';
+            }
+        }
+    });
+    // Music reverb mix slider logic
+    const musicReverbSlider = document.getElementById('musicReverb');
+    const musicReverbLabel = document.getElementById('musicReverbLabel');
+    musicReverbSlider.value = 0.3;
+    musicReverbLabel.textContent = musicReverbSlider.value;
+    // Music room size (decay) slider logic
+    const musicRoomSizeSlider = document.getElementById('musicRoomSize');
+    const musicRoomSizeLabel = document.getElementById('musicRoomSizeLabel');
+    musicRoomSizeSlider.value = 1;
+    musicRoomSizeLabel.textContent = parseFloat(musicRoomSizeSlider.value).toFixed(2);
+
+    // Set initial impulse response
+    function updateImpulseResponse() {
+        // Invert mapping: higher slider = bigger room
+        const minDecay = parseFloat(musicRoomSizeSlider.min);
+        const maxDecay = parseFloat(musicRoomSizeSlider.max);
+        const normalized = (parseFloat(musicRoomSizeSlider.value) - minDecay) / (maxDecay - minDecay);
+        const decay = minDecay + (maxDecay - minDecay) * normalized;
+        musicReverbNode.buffer = createImpulseResponse(2, decay);
+        musicRoomSizeLabel.textContent = decay.toFixed(2);
+    }
+    updateImpulseResponse();
+
+    // Set initial mix
+    musicWetGain.gain.value = parseFloat(musicReverbSlider.value);
+    musicDryGain.gain.value = 1 - parseFloat(musicReverbSlider.value);
+
+    musicReverbSlider.addEventListener('input', () => {
+        // Adjust wet/dry mix
+        musicWetGain.gain.value = parseFloat(musicReverbSlider.value);
+        musicDryGain.gain.value = 1 - parseFloat(musicReverbSlider.value);
+        musicReverbLabel.textContent = musicReverbSlider.value;
+    });
+    musicRoomSizeSlider.addEventListener('input', updateImpulseResponse);
+    // ...existing code...
+    function playThunder() {
+        let idx;
+        do {
+            idx = Math.floor(Math.random() * thunderSounds.length);
+        } while (thunderSounds.length > 1 && idx === lastThunderIndex);
+        lastThunderIndex = idx;
+        const sound = thunderSounds[idx];
+        // Flash storm icon with 1-3 staggered strikes
+        const stormIcon = document.querySelector('.storm-icon');
+        if (stormIcon) {
+            const strikes = 1 + Math.floor(Math.random() * 3); // 1 to 3
+            let i = 0;
+            function flash() {
+                stormIcon.classList.add('active');
+                setTimeout(() => {
+                    stormIcon.classList.remove('active');
+                    i++;
+                    if (i < strikes) {
+                        setTimeout(flash, 120 + Math.random() * 180); // 120-300ms between flashes
+                    }
+                }, 80 + Math.random() * 120); // 80-200ms flash duration
+            }
+            flash();
+        }
+        fetch(sound)
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                const thunderSource = audioCtx.createBufferSource();
+                thunderSource.buffer = audioBuffer;
+                thunderSource.connect(thunderGainNode);
+                thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
+                thunderSource.start(0);
+            })
+            .catch(function(err) {
+                console.error('Thunder audio playback failed:', err);
+                alert('Thunder audio could not be played. See console for details.');
+            });
+    }
+    const musicLowpassSlider = document.getElementById('musicLowpass');
+    const musicLowpassLabel = document.getElementById('musicLowpassLabel');
+    musicLowpassSlider.value = 22050;
+    musicLowpassLabel.textContent = musicLowpassSlider.value + ' Hz';
+    musicLowpassSlider.addEventListener('input', () => {
+        musicLowpassLabel.textContent = musicLowpassSlider.value + ' Hz';
+        musicLowpassNode.frequency.value = parseFloat(musicLowpassSlider.value);
+    });
+});
 const defaultMusicPath = 'sounds/music/SARAH VAUGHAN  1944-1946 (1997)(FULL ALBUM).mp3';
 let defaultMusicAudio = null;
 let isYouTubePlaying = false;
 
 function playDefaultMusic() {
+    // Stop YouTube audio stream if playing
+    if (typeof ytAudio !== 'undefined' && ytAudio && !ytAudio.paused) {
+        ytAudio.pause();
+        ytAudio.currentTime = 0;
+    }
+    // Stop YouTube iframe player if playing
+    if (typeof ytPlayer !== 'undefined' && ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === 1) {
+        ytPlayer.pauseVideo();
+    }
     if (!defaultMusicAudio) {
         defaultMusicAudio = new Audio(defaultMusicPath);
         defaultMusicAudio.loop = true;
+        const musicSource = audioCtx.createMediaElementSource(defaultMusicAudio);
+        // Music chain: source → lowpass → (dry & wet)
+        musicSource.connect(musicLowpassNode);
+        // Dry path
+        musicLowpassNode.connect(musicDryGain).connect(audioCtx.destination);
+        // Wet path
+        musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(audioCtx.destination);
     }
     defaultMusicAudio.volume = 0.5;
     defaultMusicAudio.play();
@@ -101,6 +252,9 @@ window.onYouTubeIframeAPIReady = function() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    // DOM elements for thunder controls
+    const thunderMinSlider = document.getElementById('thunderMin');
+    const thunderMaxSlider = document.getElementById('thunderMax');
     // ...existing code...
     // Rain emoji logic
     const rainEmojiContainer = document.getElementById('rain-emoji-container');
@@ -237,11 +391,196 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Hook into storm start/stop
-    const playBtn = document.getElementById('playBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    playBtn.addEventListener('click', showRainEmojis);
-    stopBtn.addEventListener('click', hideRainEmojis);
+    // Replace Play/Stop with Toggle button
+    function updateBirdsVolume() {
+        // Fade birds in/out based on rain volume
+        const rainVol = parseFloat(rainVolumeSlider.value);
+        let target = 0;
+        if (rainVol < 0.5) {
+            // Fade in as rain gets quieter
+            target = 1 - (rainVol / 0.5); // 1 at 0, 0 at 0.5
+        } else {
+            target = 0;
+        }
+        // Smooth fade
+        const FADE_SPEED = 0.02;
+        if (birdsFadeInterval) clearInterval(birdsFadeInterval);
+        birdsFadeInterval = setInterval(() => {
+            let current = birdsGainNode.gain.value;
+            if (Math.abs(current - target) < FADE_SPEED) {
+                birdsGainNode.gain.value = target;
+                clearInterval(birdsFadeInterval);
+                birdsFadeInterval = null;
+            } else {
+                birdsGainNode.gain.value += (target - current) * FADE_SPEED;
+            }
+        }, 30);
+    }
+    function stopBirds() {
+        if (birdsAudio && birdsAudio.stop) {
+            try { birdsAudio.stop(); } catch(e) {}
+            try { birdsAudio.disconnect(); } catch(e) {}
+            birdsAudio = null;
+        }
+        if (birdsFadeInterval) {
+            clearInterval(birdsFadeInterval);
+            birdsFadeInterval = null;
+        }
+        birdsGainNode.gain.value = 0;
+    }
+    function stopRain() {
+        if (rainAudio && rainAudio.stop) {
+            try { rainAudio.stop(); } catch(e) {}
+            try { rainAudio.disconnect(); } catch(e) {}
+            rainAudio = null;
+        }
+        if (rainAudio2 && rainAudio2.stop) {
+            try { rainAudio2.stop(); } catch(e) {}
+            try { rainAudio2.disconnect(); } catch(e) {}
+            rainAudio2 = null;
+        }
+                // Set button to Start Storm (green)
+                const stormToggleBtn = document.getElementById('stormToggleBtn');
+                if (stormToggleBtn) {
+                    stormToggleBtn.classList.remove('storm-stop');
+                    stormToggleBtn.classList.add('storm-start');
+                    stormToggleBtn.textContent = 'Start Storm';
+                }
+    }
+    function scheduleThunder() {
+        // Schedule thunder at random intervals between min and max
+        if (!isPlaying) return;
+        const min = parseFloat(thunderMinSlider.value);
+        const max = parseFloat(thunderMaxSlider.value);
+        const nextDelay = min * 1000 + Math.random() * (max - min) * 1000;
+        if (window.thunderTimeout) clearTimeout(window.thunderTimeout);
+        window.thunderTimeout = setTimeout(() => {
+            if (!isPlaying) return;
+            playThunder();
+            scheduleThunder();
+        }, nextDelay);
+    }
+    function playBirds() {
+        stopBirds();
+        if (!birdsBuffer) return;
+        birdsAudio = audioCtx.createBufferSource();
+        birdsAudio.buffer = birdsBuffer;
+        birdsAudio.loop = true;
+        // Connect birdsAudio to birdsGainNode only
+        birdsAudio.connect(birdsGainNode);
+        birdsAudio.start(0);
+        updateBirdsVolume();
+    }
+    function playRain() {
+        // Stop previous rain audios
+        if (rainAudio && rainAudio.stop) {
+            try { rainAudio.stop(); } catch(e) {}
+        }
+        if (rainAudio2 && rainAudio2.stop) {
+            try { rainAudio2.stop(); } catch(e) {}
+        }
+        // Load and decode rain sound as AudioBuffer
+        fetch(rainSoundPath)
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                function scheduleRainOverlap() {
+                    // Pick random overlap between 5 and 10 seconds
+                    const overlap = 5 + Math.random() * 5;
+                    const duration = audioBuffer.duration;
+                    // Start first rain
+                    rainAudio = audioCtx.createBufferSource();
+                    rainAudio.buffer = audioBuffer;
+                    rainAudio.loop = false;
+                    rainAudio.connect(rainGainNode);
+                    rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+                    rainAudio.start(0);
+                    // Schedule second rain to start before first ends
+                    setTimeout(() => {
+                        rainAudio2 = audioCtx.createBufferSource();
+                        rainAudio2.buffer = audioBuffer;
+                        rainAudio2.loop = false;
+                        rainAudio2.connect(rainGainNode);
+                        rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+                        rainAudio2.start(0);
+                        // When second finishes, reschedule
+                        rainAudio2.onended = scheduleRainOverlap;
+                    }, (duration - overlap) * 1000);
+                    // When first finishes, disconnect
+                    rainAudio.onended = () => {
+                        try { rainAudio.disconnect(); } catch(e) {}
+                        rainAudio = null;
+                    };
+                }
+                scheduleRainOverlap();
+                playBirds();
+                // Turn Storm Toggle button red when rain starts
+                const stormToggleBtn = document.getElementById('stormToggleBtn');
+                if (stormToggleBtn) {
+                stormToggleBtn.classList.remove('storm-start');
+                stormToggleBtn.classList.add('storm-stop');
+                stormToggleBtn.textContent = 'Stop Storm';
+                }
+            })
+            .catch(function(err) {
+                console.error('Rain audio playback failed:', err);
+                alert('Rain audio could not be played. See console for details.');
+            });
+    }
+    const stormToggleBtn = document.getElementById('stormToggleBtn');
+    let stormActive = false;
+    function startStorm() {
+        console.log('Storm started');
+        if (isPlaying) return;
+        isPlaying = true;
+        playRain();
+        scheduleThunder();
+        if (ytReady && ytPlayer.getVideoData && ytPlayer.getVideoData().video_id) {
+            ytPlayer.playVideo();
+            setTimeout(() => {
+                if (ytPlayer.getPlayerState && ytPlayer.getPlayerState() !== 1) {
+                    ytPlayer.playVideo();
+                }
+            }, 500);
+        } else {
+            playDefaultMusic();
+        }
+    }
+    function stopStorm() {
+        console.log('Storm stopped');
+        isPlaying = false;
+        stopRain();
+        stopBirds();
+        if (thunderInterval) {
+            clearInterval(thunderInterval);
+            thunderInterval = null;
+        }
+    }
+    function updateStormToggleBtn() {
+        if (stormActive) {
+            stormToggleBtn.textContent = 'Stop Storm';
+            stormToggleBtn.classList.remove('storm-start');
+            stormToggleBtn.classList.add('storm-stop');
+        } else {
+            stormToggleBtn.textContent = 'Start Storm';
+            stormToggleBtn.classList.remove('storm-stop');
+            stormToggleBtn.classList.add('storm-start');
+        }
+    }
+    function toggleStorm() {
+        if (!stormActive) {
+            stormActive = true;
+            startStorm();
+            showRainEmojis();
+        } else {
+            stormActive = false;
+            stopStorm();
+            hideRainEmojis();
+        }
+        updateStormToggleBtn();
+    }
+    stormToggleBtn.addEventListener('click', toggleStorm);
+    updateStormToggleBtn();
     // Music controls (default MP3)
     const musicPlayBtn = document.getElementById('musicPlayBtn');
     const musicPauseBtn = document.getElementById('musicPauseBtn');
@@ -295,6 +634,28 @@ let isPlaying = false;
 let lastThunderIndex = -1;
 // Web Audio API context and filter
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// Music reverb node and wet/dry gain nodes
+const musicReverbNode = audioCtx.createConvolver();
+const musicWetGain = audioCtx.createGain();
+const musicDryGain = audioCtx.createGain();
+
+// Utility to create impulse response for reverb
+function createImpulseResponse(duration, decay) {
+    const sampleRate = audioCtx.sampleRate;
+    const length = sampleRate * duration;
+    const impulse = audioCtx.createBuffer(2, length, sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+        const channelData = impulse.getChannelData(channel);
+        for (let i = 0; i < length; i++) {
+            channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+        }
+    }
+    return impulse;
+}
+// Music lowpass filter node
+const musicLowpassNode = audioCtx.createBiquadFilter();
+musicLowpassNode.type = 'lowpass';
+musicLowpassNode.frequency.value = 22050;
 const lowpassFilterNode = audioCtx.createBiquadFilter();
 lowpassFilterNode.type = 'lowpass';
 lowpassFilterNode.frequency.value = document.getElementById('lowpassFilter').value;
@@ -329,8 +690,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const frequencyLabel = document.getElementById('frequencyLabel');
     const lowpassFilterSlider = document.getElementById('lowpassFilter');
     const lowpassLabel = document.getElementById('lowpassLabel');
-    const playBtn = document.getElementById('playBtn');
-    const stopBtn = document.getElementById('stopBtn');
+    // Removed playBtn and stopBtn, now using stormToggleBtn
     const birdsMuteBtn = document.getElementById('birdsMuteBtn');
 
     rainVolumeSlider.value = '0.25';
@@ -426,9 +786,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 scheduleRainOverlap();
                 playBirds();
-                // Turn Play Storm button green when rain starts
-                const playBtn = document.getElementById('playBtn');
-                if (playBtn) playBtn.classList.add('music-playing');
+                // Turn Storm Toggle button green when rain starts
+                const stormToggleBtn = document.getElementById('stormToggleBtn');
+                if (stormToggleBtn) {
+                    stormToggleBtn.classList.add('music-playing');
+                    stormToggleBtn.textContent = 'Stop Storm';
+                }
             })
             .catch(function(err) {
                 console.error('Rain audio playback failed:', err);
@@ -492,11 +855,22 @@ window.addEventListener('DOMContentLoaded', () => {
         } while (thunderSounds.length > 1 && idx === lastThunderIndex);
         lastThunderIndex = idx;
         const sound = thunderSounds[idx];
-        // Light up thunder button
-        const thunderBtn = document.getElementById('thunderBtn');
-        if (thunderBtn) {
-            thunderBtn.classList.add('active');
-            setTimeout(() => thunderBtn.classList.remove('active'), 700);
+        // Flash storm icon with 1-3 staggered strikes
+        const stormIcon = document.querySelector('.storm-icon');
+        if (stormIcon) {
+            const strikes = 1 + Math.floor(Math.random() * 3); // 1 to 3
+            let i = 0;
+            function flash() {
+                stormIcon.classList.add('active');
+                setTimeout(() => {
+                    stormIcon.classList.remove('active');
+                    i++;
+                    if (i < strikes) {
+                        setTimeout(flash, 120 + Math.random() * 180); // 120-300ms between flashes
+                    }
+                }, 80 + Math.random() * 120); // 80-200ms flash duration
+            }
+            flash();
         }
         fetch(sound)
             .then(response => response.arrayBuffer())
@@ -514,15 +888,13 @@ window.addEventListener('DOMContentLoaded', () => {
             });
     }
     function startStorm() {
-        console.log('Play button clicked');
+        console.log('Storm started');
         if (isPlaying) return;
         isPlaying = true;
         playRain();
         scheduleThunder();
-        // Play YouTube music only if a video is loaded, otherwise play default music
         if (ytReady && ytPlayer.getVideoData && ytPlayer.getVideoData().video_id) {
             ytPlayer.playVideo();
-            // Fallback: retry if not playing after 500ms
             setTimeout(() => {
                 if (ytPlayer.getPlayerState && ytPlayer.getPlayerState() !== 1) {
                     ytPlayer.playVideo();
@@ -531,20 +903,16 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
             playDefaultMusic();
         }
-        playBtn.disabled = true;
-        stopBtn.disabled = false;
     }
     function stopStorm() {
-        console.log('Stop button clicked');
+        console.log('Storm stopped');
         isPlaying = false;
         stopRain();
-    stopBirds();
+        stopBirds();
         if (thunderInterval) {
             clearInterval(thunderInterval);
             thunderInterval = null;
         }
-        playBtn.disabled = false;
-        stopBtn.disabled = true;
     }
 
     function stopRain() {
@@ -558,9 +926,12 @@ window.addEventListener('DOMContentLoaded', () => {
             try { rainAudio2.disconnect(); } catch(e) {}
             rainAudio2 = null;
         }
-        // Remove green from Play Storm button when rain stops
-        const playBtn = document.getElementById('playBtn');
-        if (playBtn) playBtn.classList.remove('music-playing');
+        // Remove green from Storm Toggle button when rain stops
+        const stormToggleBtn = document.getElementById('stormToggleBtn');
+        if (stormToggleBtn) {
+            stormToggleBtn.classList.remove('music-playing');
+            stormToggleBtn.textContent = 'Start Storm';
+        }
     }
     function scheduleThunder() {
         // Schedule thunder at random intervals between min and max
@@ -612,16 +983,17 @@ window.addEventListener('DOMContentLoaded', () => {
             scheduleThunder();
         }
     });
-    playBtn.addEventListener('click', startStorm);
     // Add CSS for green button when music is playing
     const style = document.createElement('style');
     style.textContent = `.music-playing { background-color: #2ecc40 !important; color: #fff !important; }`;
     document.head.appendChild(style);
-    stopBtn.addEventListener('click', stopStorm);
-    document.getElementById('thunderBtn').addEventListener('click', () => {
-        playThunder();
-    });
+    const stormIcon = document.querySelector('.storm-icon');
+    if (stormIcon) {
+        stormIcon.style.cursor = 'pointer';
+        stormIcon.addEventListener('click', () => {
+            playThunder();
+            stormIcon.classList.add('active');
+            setTimeout(() => stormIcon.classList.remove('active'), 700);
+        });
+    }
 });
-
-
-
