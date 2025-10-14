@@ -74,26 +74,7 @@
                     </label>
                 </div>
             </details>
-            <details open>
-                <summary>YouTube Link</summary>
-                <div id="youtube-link-area" style="margin-bottom:8px;">
-                    <input type="text" id="ytLinkInput" placeholder="Paste YouTube URL here" style="width:220px;" value="https://youtu.be/4unfhTQDs2g">
-                    <button id="ytLoadBtn">Load Video</button>
-                    <div id="ytWarning" style="display:none; background:#222; color:#ffe066; border:2px solid #ffe066; border-radius:8px; padding:10px; margin-top:8px; font-size:1em; box-shadow:0 2px 8px #0006;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <strong>⚡ Storm Generator Notice:</strong>
-                            <button id="ytWarningClose" style="background:none;border:none;color:#ffe066;font-size:1.3em;cursor:pointer;padding:0 6px;">✖</button>
-                        </div>
-                        Effects and sliders only work for direct audio streams (mp3, m4a, webm, ogg).<br>
-                        YouTube video links cannot be processed due to browser security.<br>
-                        Try using a direct audio link for full storm effects!
-                    </div>
-                </div>
-                <div style="display:none;">
-                    <div id="ytPlayer"></div>
-                    <audio id="ytAudio" style="display:none;" controls></audio>
-                </div>
-            </details>
+
         </div>
         <div class="button-row">
             <button id="stormToggleBtn" style="width:100%;height:48px;margin-bottom:6px;">Start Storm</button>

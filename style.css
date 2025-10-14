@@ -84,29 +84,6 @@
 .controls details > *:not(summary) {
     padding: 16px 18px 10px 18px;
 }
-/* Dark theme for YouTube link input area */
-#youtube-link-area {
-    color: #eee;
-}
-#ytLinkInput {
-    background: #222;
-    color: #eee;
-    border: 1px solid #444;
-    border-radius: 4px;
-    padding: 4px 8px;
-}
-#ytLoadBtn {
-    background: #333;
-    color: #eee;
-    border: 1px solid #444;
-    border-radius: 4px;
-    padding: 4px 12px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-#ytLoadBtn:hover {
-    background: #444;
-}
 body {
     font-family: Arial, sans-serif;
     background: linear-gradient(to top, #232526, #414345);
