@@ -577,10 +577,46 @@ window.addEventListener('DOMContentLoaded', () => {
     stormToggleBtn.classList.add('storm-start');
     stormToggleBtn.addEventListener('click', toggleStorm);
     
-    // ===== RAIN VOLUME =====
+    // ===== SET DEFAULT VALUES TO OUTDOOR PRESET =====
     const rainVolumeSlider = document.getElementById('rainVolume');
-    // Set initial gain from slider's default value
-    rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+    const thunderVolumeSlider = document.getElementById('thunderVolume');
+    const lowpassFilterSlider = document.getElementById('lowpassFilter');
+    const musicVolumeSlider = document.getElementById('musicVolume');
+    const musicLowpassSlider = document.getElementById('musicLowpass');
+    const musicRoomSizeSlider = document.getElementById('musicRoomSize');
+    const musicReverbSlider = document.getElementById('musicReverb');
+    
+    // Apply Outdoor preset defaults
+    rainVolumeSlider.value = 0.25;
+    thunderVolumeSlider.value = 0.5;
+    lowpassFilterSlider.value = 22050;
+    musicVolumeSlider.value = 50;
+    musicLowpassSlider.value = 22050;
+    musicRoomSizeSlider.value = 0.05;
+    musicReverbSlider.value = 0;
+    
+    // Set initial gain nodes from Outdoor preset values
+    rainGainNode.gain.value = 0.25;
+    thunderGainNode.gain.value = 0.5;
+    lowpassFilterNode.frequency.value = 22050;
+    musicLowpassNode.frequency.value = 22050;
+    
+    // Update room size reverb
+    const roomDecay = 0.05 * 2;
+    musicReverbNode.buffer = createImpulseResponse(2, roomDecay);
+    
+    // Update reverb mix
+    musicWetGain.gain.value = 0;
+    musicDryGain.gain.value = 1;
+    
+    // Update all labels to match Outdoor preset
+    document.getElementById('lowpassLabel').textContent = '22050 Hz';
+    document.getElementById('musicLowpassLabel').textContent = '22050 Hz';
+    document.getElementById('musicRoomSizeLabel').textContent = '0.05';
+    document.getElementById('musicReverbLabel').textContent = '0.00';
+    document.getElementById('frequencyLabel').textContent = '15-60s';
+    
+    // ===== RAIN VOLUME =====
     
     rainVolumeSlider.addEventListener('input', () => {
         rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
@@ -588,9 +624,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     
     // ===== THUNDER VOLUME =====
-    const thunderVolumeSlider = document.getElementById('thunderVolume');
-    // Set initial gain from slider's default value
-    thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
     
     thunderVolumeSlider.addEventListener('input', () => {
         thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
@@ -614,7 +647,6 @@ window.addEventListener('DOMContentLoaded', () => {
     thunderMinSlider.addEventListener('input', updateFrequencyLabel);
     thunderMaxSlider.addEventListener('input', updateFrequencyLabel);
     
-    const lowpassFilterSlider = document.getElementById('lowpassFilter');
     const lowpassLabel = document.getElementById('lowpassLabel');
     
     lowpassFilterSlider.addEventListener('input', () => {
@@ -657,7 +689,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const musicPlayBtn = document.getElementById('musicPlayBtn');
     const musicPauseBtn = document.getElementById('musicPauseBtn');
     const musicStopBtn = document.getElementById('musicStopBtn');
-    const musicVolumeSlider = document.getElementById('musicVolume');
     
     musicPlayBtn.addEventListener('click', playDefaultMusic);
     musicPauseBtn.addEventListener('click', pauseDefaultMusic);
@@ -669,7 +700,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    const musicLowpassSlider = document.getElementById('musicLowpass');
     const musicLowpassLabel = document.getElementById('musicLowpassLabel');
     
     musicLowpassSlider.addEventListener('input', () => {
@@ -678,7 +708,6 @@ window.addEventListener('DOMContentLoaded', () => {
         musicLowpassNode.frequency.value = cutoff;
     });
     
-    const musicReverbSlider = document.getElementById('musicReverb');
     const musicReverbLabel = document.getElementById('musicReverbLabel');
     
     musicReverbSlider.addEventListener('input', () => {
@@ -688,7 +717,6 @@ window.addEventListener('DOMContentLoaded', () => {
         musicReverbLabel.textContent = mix.toFixed(2);
     });
     
-    const musicRoomSizeSlider = document.getElementById('musicRoomSize');
     const musicRoomSizeLabel = document.getElementById('musicRoomSizeLabel');
     
     musicRoomSizeSlider.addEventListener('input', () => {
