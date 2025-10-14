@@ -14,6 +14,11 @@
             <img src="thunderstorm.svg" alt="Thunderstorm Icon" class="storm-icon">
         </div>
         <div class="controls">
+            <div class="preset-buttons">
+                <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
+                <button class="preset-btn" id="presetIndoor">🛋️ Indoor</button>
+                <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
+            </div>
             <details open>
                 <summary>Rain Options</summary>
                 <label>Rain Volume
@@ -65,7 +70,7 @@
                         <span id="musicLowpassLabel">22050 Hz</span>
                     </label>
                     <label for="musicRoomSize">Room Size
-                        <input type="range" id="musicRoomSize" min="0.1" max="2" step="0.01" value="1">
+                        <input type="range" id="musicRoomSize" min="0.01" max="2" step="0.01" value="1">
                         <span id="musicRoomSizeLabel">1.00</span>
                     </label>
                     <label for="musicReverb">Music Reverb Mix

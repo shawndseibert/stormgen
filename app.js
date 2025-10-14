@@ -50,7 +50,8 @@ const THUNDER_SOUNDS = [
 // State variables
 let isPlaying = false;
 let lastThunderIndex = -1;
-let rainSource = null;
+let rainSources = []; // Array to hold multiple overlapping rain sources
+let rainBuffer = null; // Cached rain audio buffer
 let birdsSource = null;
 let birdsBuffer = null;
 let birdsMuted = false;
@@ -61,7 +62,22 @@ let defaultMusicAudio = null;
 // Note: Music does NOT auto-play. User must click "Play" button.
 // This respects browser autoplay policies and gives users full control.
 
-// ==================== UTILITY FUNCTIONS ====================
+    // ===== PRESET BUTTONS =====
+    const presetIndoorCozyBtn = document.getElementById('presetIndoorCozy');
+    const presetIndoorBtn = document.getElementById('presetIndoor');
+    const presetOutdoorBtn = document.getElementById('presetOutdoor');
+    
+    if (presetIndoorCozyBtn) {
+        presetIndoorCozyBtn.addEventListener('click', () => applyPreset('indoorcozy'));
+    }
+    if (presetIndoorBtn) {
+        presetIndoorBtn.addEventListener('click', () => applyPreset('indoor'));
+    }
+    if (presetOutdoorBtn) {
+        presetOutdoorBtn.addEventListener('click', () => applyPreset('outdoor'));
+    }
+    
+    // ===== PANEL STATE PERSISTENCE =====
 function createImpulseResponse(duration, decay) {
     const sampleRate = audioCtx.sampleRate;
     const length = sampleRate * duration;
@@ -69,37 +85,169 @@ function createImpulseResponse(duration, decay) {
     for (let channel = 0; channel < 2; channel++) {
         const channelData = impulse.getChannelData(channel);
         for (let i = 0; i < length; i++) {
-            channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+            // Invert decay so higher values = longer reverb
+            // Lower decay (like 0.5) = steep curve = short reverb (small room)
+            // Higher decay (like 4.0) = gentle curve = long reverb (large room)
+            // We invert with division: 1/decay
+            const invertedDecay = 1 / decay;
+            channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, invertedDecay);
         }
     }
     return impulse;
 }
 
-// ==================== RAIN FUNCTIONS ====================
-function playRain() {
-    stopRain();
+// ==================== PRESET FUNCTIONS ====================
+function applyPreset(presetName) {
+    const rainVolumeSlider = document.getElementById('rainVolume');
+    const thunderVolumeSlider = document.getElementById('thunderVolume');
+    const lowpassFilterSlider = document.getElementById('lowpassFilter');
+    const musicVolumeSlider = document.getElementById('musicVolume');
+    const musicLowpassSlider = document.getElementById('musicLowpass');
+    const musicRoomSizeSlider = document.getElementById('musicRoomSize');
+    const musicReverbSlider = document.getElementById('musicReverb');
     
+    // Resume AudioContext if needed
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    
+    if (presetName === 'indoorcozy') {
+        // Indoor Cozy: Max rain, heavy filtering, tiny room with reverb, music auto-plays
+        rainVolumeSlider.value = 1;
+        thunderVolumeSlider.value = 0.5;
+        lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
+        musicVolumeSlider.value = 40;
+        musicLowpassSlider.value = 22050; // Max - no filtering on music
+        musicRoomSizeSlider.value = 0.05; // Very small room
+        musicReverbSlider.value = 0.60; // Higher reverb mix
+        
+        // Start music if not already playing
+        if (!defaultMusicAudio || defaultMusicAudio.paused) {
+            playDefaultMusic();
+        }
+        
+    } else if (presetName === 'indoor') {
+        // Indoor: Same as Indoor Cozy but NO auto-play music
+        rainVolumeSlider.value = 1;
+        thunderVolumeSlider.value = 0.5;
+        lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
+        musicVolumeSlider.value = 40;
+        musicLowpassSlider.value = 22050; // Max - no filtering on music
+        musicRoomSizeSlider.value = 0.05; // Very small room
+        musicReverbSlider.value = 0.60; // Higher reverb mix
+        
+        // Do NOT auto-play music for Indoor preset
+        
+    } else if (presetName === 'outdoor') {
+        // Outdoor: Light rain, open sound, no reverb, no auto-play music
+        rainVolumeSlider.value = 0.25; // 1/4 volume
+        thunderVolumeSlider.value = 0.5; // Half way
+        lowpassFilterSlider.value = 22050; // Max - no filtering
+        musicVolumeSlider.value = 50; // Half volume
+        musicLowpassSlider.value = 22050; // Max - no filtering
+        musicRoomSizeSlider.value = 0.05; // Small room
+        musicReverbSlider.value = 0; // No reverb
+        
+        // Do NOT auto-play music for Outdoor preset
+    }
+    
+    // Trigger all input events to update audio nodes and labels
+    rainVolumeSlider.dispatchEvent(new Event('input'));
+    thunderVolumeSlider.dispatchEvent(new Event('input'));
+    lowpassFilterSlider.dispatchEvent(new Event('input'));
+    musicVolumeSlider.dispatchEvent(new Event('input'));
+    musicLowpassSlider.dispatchEvent(new Event('input'));
+    musicRoomSizeSlider.dispatchEvent(new Event('input'));
+    musicReverbSlider.dispatchEvent(new Event('input'));
+    
+    // Start storm if not already playing
+    if (!isPlaying) {
+        startStorm();
+    }
+}
+
+// ==================== RAIN FUNCTIONS ====================
+// Pre-load rain buffer for efficient playback
+function loadRainBuffer() {
     fetch(RAIN_SOUND)
         .then(res => res.arrayBuffer())
         .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
         .then(audioBuffer => {
-            rainSource = audioCtx.createBufferSource();
-            rainSource.buffer = audioBuffer;
-            rainSource.loop = true;
-            rainSource.connect(rainGainNode);
-            rainSource.start(0);
+            rainBuffer = audioBuffer;
         })
-        .catch(err => console.error('Rain audio failed:', err));
+        .catch(err => console.error('Rain buffer loading failed:', err));
+}
+
+function playRain() {
+    stopRain();
+    
+    if (!rainBuffer) {
+        // If buffer isn't loaded yet, load it first
+        fetch(RAIN_SOUND)
+            .then(res => res.arrayBuffer())
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                rainBuffer = audioBuffer;
+                startRainLayer();
+            })
+            .catch(err => console.error('Rain audio failed:', err));
+    } else {
+        startRainLayer();
+    }
+}
+
+function startRainLayer() {
+    if (!rainBuffer || !isPlaying) return;
+    
+    const source = audioCtx.createBufferSource();
+    source.buffer = rainBuffer;
+    source.loop = false; // No loop - we'll manually overlap
+    source.connect(rainGainNode);
+    
+    const duration = rainBuffer.duration;
+    
+    // Calculate random start time for next layer (between 50% and 100% of duration)
+    // This creates natural waves - sometimes layers overlap more, sometimes less
+    const nextLayerDelay = (0.5 + Math.random() * 0.5) * duration * 1000;
+    
+    // Start this layer
+    source.start(0);
+    rainSources.push(source);
+    
+    // Schedule next layer before this one ends
+    const scheduleTimeout = setTimeout(() => {
+        if (isPlaying) {
+            startRainLayer(); // Recursively start next layer
+        }
+    }, nextLayerDelay);
+    
+    // Clean up this source when it ends
+    source.onended = () => {
+        const index = rainSources.indexOf(source);
+        if (index > -1) {
+            rainSources.splice(index, 1);
+        }
+        try {
+            source.disconnect();
+        } catch(e) {}
+    };
+    
+    // Store timeout so we can cancel it if needed
+    source._scheduleTimeout = scheduleTimeout;
 }
 
 function stopRain() {
-    if (rainSource) {
+    // Stop all active rain sources
+    rainSources.forEach(source => {
         try {
-            rainSource.stop();
-            rainSource.disconnect();
+            source.stop();
+            source.disconnect();
+            if (source._scheduleTimeout) {
+                clearTimeout(source._scheduleTimeout);
+            }
         } catch(e) {}
-        rainSource = null;
-    }
+    });
+    rainSources = [];
 }
 
 // ==================== BIRDS FUNCTIONS ====================
@@ -415,11 +563,12 @@ function animateRainDrops() {
 
 // ==================== DOM INITIALIZATION ====================
 window.addEventListener('DOMContentLoaded', () => {
-    // Pre-load birds audio buffer (doesn't play yet)
+    // Pre-load audio buffers (doesn't play yet)
     loadBirds();
+    loadRainBuffer();
     
-    // Set up music reverb
-    musicReverbNode.buffer = createImpulseResponse(2, 1);
+    // Set up music reverb with corrected decay
+    musicReverbNode.buffer = createImpulseResponse(2, 2); // Default room size 1.0 * 2 = decay 2
     musicWetGain.gain.value = 0.3;
     musicDryGain.gain.value = 0.7;
     
@@ -543,9 +692,16 @@ window.addEventListener('DOMContentLoaded', () => {
     const musicRoomSizeLabel = document.getElementById('musicRoomSizeLabel');
     
     musicRoomSizeSlider.addEventListener('input', () => {
-        const decay = parseFloat(musicRoomSizeSlider.value);
+        const sliderValue = parseFloat(musicRoomSizeSlider.value);
+        
+        // Invert the decay calculation so:
+        // Low slider value (0.1) = small room = short reverb (low decay like 0.5)
+        // High slider value (2.0) = large room = long reverb (high decay like 4)
+        // Formula: decay = sliderValue * 2 (ranges from 0.2 to 4.0)
+        const decay = sliderValue * 2;
+        
         musicReverbNode.buffer = createImpulseResponse(2, decay);
-        musicRoomSizeLabel.textContent = decay.toFixed(2);
+        musicRoomSizeLabel.textContent = sliderValue.toFixed(2);
     });
     
     const stormIcon = document.querySelector('.storm-icon');

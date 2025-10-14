@@ -1,3 +1,60 @@
+/* Preset buttons styling */
+.preset-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 0;
+}
+
+.preset-btn {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.preset-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.preset-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.preset-btn#presetIndoorCozy {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.preset-btn#presetIndoorCozy:hover {
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+}
+
+.preset-btn#presetIndoor {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.preset-btn#presetIndoor:hover {
+    box-shadow: 0 4px 12px rgba(168, 237, 234, 0.4);
+}
+
+.preset-btn#presetOutdoor {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.preset-btn#presetOutdoor:hover {
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+}
+
 .thunder-options-label {
     display: flex;
     flex-direction: column;
