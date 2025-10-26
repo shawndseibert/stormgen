@@ -223,32 +223,6 @@ body::after {
     position: relative;
 }
 
-/* Pip-Boy corner details */
-.container::before,
-.container::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #00ff41;
-}
-
-.container::before {
-    top: -2px;
-    left: -2px;
-    border-right: none;
-    border-bottom: none;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
-}
-
-.container::after {
-    bottom: -2px;
-    right: -2px;
-    border-left: none;
-    border-top: none;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
-}
-
 .title-row {
     display: flex;
     align-items: center;
