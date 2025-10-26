@@ -8,11 +8,17 @@
 </head>
 <body>
     <div class="container">
-        <div class="title-row" style="position:relative;">
-            <div id="rain-emoji-container"></div>
+        <div class="title-row">
             <h1>Storm Generator</h1>
-            <img src="thunderstorm.svg" alt="Thunderstorm Icon" class="storm-icon">
+            <div id="weather-icon" class="weather-icon">☀️</div>
         </div>
+        
+        <!-- Waveform Visualizer -->
+        <div id="waveform-container">
+            <span class="waveform-label">AUDIO WAVEFORM</span>
+            <canvas id="waveform"></canvas>
+        </div>
+        
         <div class="controls">
             <div class="preset-buttons">
                 <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
@@ -22,7 +28,7 @@
             <details open>
                 <summary>Rain Options</summary>
                 <label>Rain Volume
-                    <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0.25">
+                    <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0">
                 </label>
                 <label for="rainReverb">Rain Reverb Mix
                     <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
@@ -33,7 +39,7 @@
                 <summary>Thunder Options</summary>
                 <div class="thunder-options-label">
                     <label>Thunder Volume
-                        <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="0.5">
+                        <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="1">
                     </label>
                     <label for="thunderReverb">Thunder Reverb Mix
                         <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
@@ -71,7 +77,7 @@
                         <button id="musicStopBtn">Stop</button>
                     </div>
                     <label for="musicVolume">Music Volume
-                        <input type="range" id="musicVolume" min="0" max="100" value="50">
+                        <input type="range" id="musicVolume" min="0" max="100" value="100">
                     </label>
                     <label for="musicLowpass">Music Lowpass Filter
                         <input type="range" id="musicLowpass" min="420" max="22050" step="1" value="22050">

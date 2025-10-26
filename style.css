@@ -1,3 +1,9 @@
+/* ============================================
+   FALLOUT PIP-BOY RETRO-FUTURISTIC THEME
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
 /* Preset buttons styling */
 .preset-buttons {
     display: flex;
@@ -9,50 +15,51 @@
 .preset-btn {
     flex: 1;
     padding: 12px 8px;
-    font-size: 0.9em;
-    font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    font-size: 0.85em;
+    font-weight: 700;
+    background: rgba(0, 255, 65, 0.15);
+    color: #00ff41;
+    border: 2px solid #00ff41;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+    text-shadow: 0 0 5px #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Convert preset button emojis to Pip-Boy green style */
+.preset-btn::before {
+    filter: brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(70deg);
 }
 
 .preset-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(0, 255, 65, 0.25);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6), inset 0 0 10px rgba(0, 255, 65, 0.2);
+    text-shadow: 0 0 8px #00ff41;
 }
 
 .preset-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    background: rgba(0, 255, 65, 0.35);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.5), inset 0 0 15px rgba(0, 255, 65, 0.3);
 }
 
-.preset-btn#presetIndoorCozy {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.preset-btn#presetIndoorCozy:hover {
-    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
-}
-
-.preset-btn#presetIndoor {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-}
-
-.preset-btn#presetIndoor:hover {
-    box-shadow: 0 4px 12px rgba(168, 237, 234, 0.4);
-}
-
+.preset-btn#presetIndoorCozy,
+.preset-btn#presetIndoor,
 .preset-btn#presetOutdoor {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: rgba(0, 255, 65, 0.15);
+    color: #00ff41;
 }
 
+.preset-btn#presetIndoorCozy:hover,
+.preset-btn#presetIndoor:hover,
 .preset-btn#presetOutdoor:hover {
-    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+    background: rgba(0, 255, 65, 0.25);
 }
 
 .thunder-options-label {
@@ -97,30 +104,34 @@
     width: 100%;
     margin-top: 6px;
 }
-/* Modern dropdown panel styles */
+/* Modern dropdown panel styles - Pip-Boy Edition */
 .controls details {
-    background: rgba(40, 44, 52, 0.95);
-    border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-    margin-bottom: 18px;
-    border: 1px solid #333;
+    background: rgba(0, 20, 10, 0.9);
+    border-radius: 4px;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    margin-bottom: 12px;
+    border: 2px solid #00ff41;
     overflow: hidden;
     transition: box-shadow 0.2s;
 }
 .controls details[open] {
-    box-shadow: 0 4px 24px rgba(0,0,0,0.28);
+    box-shadow: 0 0 25px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 .controls summary {
-    font-size: 1.15em;
-    font-weight: 600;
-    color: #ffd200;
-    background: linear-gradient(90deg, #232526 60%, #414345 100%);
-    padding: 12px 18px;
-    border-bottom: 1px solid #333;
+    font-size: 1em;
+    font-weight: 700;
+    color: #00ff41;
+    background: rgba(0, 40, 20, 0.8);
+    padding: 10px 16px;
+    border-bottom: 1px solid #00ff41;
     cursor: pointer;
     outline: none;
     user-select: none;
     position: relative;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px #00ff41;
 }
 .controls summary::-webkit-details-marker {
     display: none;
@@ -128,131 +139,233 @@
 .controls summary:after {
     content: '\25BC';
     position: absolute;
-    right: 18px;
+    right: 16px;
     top: 50%;
     transform: translateY(-50%) rotate(0deg);
     transition: transform 0.2s;
-    color: #ffd200;
-    font-size: 1em;
+    color: #00ff41;
+    font-size: 0.8em;
+    text-shadow: 0 0 5px #00ff41;
 }
 .controls details[open] summary:after {
     transform: translateY(-50%) rotate(-180deg);
 }
 .controls details > *:not(summary) {
-    padding: 16px 18px 10px 18px;
+    padding: 14px 16px 10px 16px;
 }
+
 body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(to top, #232526, #414345);
-    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    background: #0a0a0a;
+    color: #00ff41;
     margin: 0;
     min-height: 100vh;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    position: relative;
+    overflow-x: hidden;
 }
+
+/* Scanline effect */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 9999;
+    animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(10px); }
+}
+
+/* CRT screen flicker */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 255, 65, 0.02);
+    pointer-events: none;
+    z-index: 9998;
+    animation: flicker 0.15s infinite alternate;
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.95; }
+}
+
 .container {
-    max-width: 400px;
-    margin: 60px auto;
-    background: rgba(0,0,0,0.7);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    max-width: 420px;
+    margin: 40px auto;
+    background: rgba(0, 20, 10, 0.95);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 40px rgba(0, 255, 65, 0.4), inset 0 0 30px rgba(0, 0, 0, 0.9);
+    border: 3px solid #00ff41;
+    position: relative;
+}
+
+/* Pip-Boy corner details */
+.container::before,
+.container::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ff41;
+}
+
+.container::before {
+    top: -2px;
+    left: -2px;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+}
+
+.container::after {
+    bottom: -2px;
+    right: -2px;
+    border-left: none;
+    border-top: none;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
 }
 
 .title-row {
     display: flex;
     align-items: center;
-    gap: 18px;
-    margin-bottom: 18px;
-    justify-content: flex-end;
+    margin-bottom: 16px;
+    justify-content: center;
+    padding: 16px 10px;
+    background: rgba(0, 40, 20, 0.6);
+    border: 2px solid #00ff41;
+    border-radius: 4px;
     position: relative;
 }
 
-.title-row h1, .title-row .storm-icon {
-    position: relative;
-    z-index: 2;
+h1 {
+    text-align: center;
+    margin: 0;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1.5em;
+    text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+    flex: 1;
 }
 
-#rain-emoji-container {
-    position: absolute;
-    left: 0;
-    top: 0;
+/* Waveform Visualizer */
+#waveform-container {
     width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ff41;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.9);
+    position: relative;
     overflow: hidden;
 }
 
-.rain-drop {
+#waveform {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.waveform-label {
     position: absolute;
-    font-size: 1.2em;
-    opacity: 0.85;
-    animation: rain-fall 1.2s linear infinite;
-    user-select: none;
-    will-change: transform, opacity;
+    top: 4px;
+    left: 8px;
+    color: #00ff41;
+    font-size: 0.7em;
+    text-shadow: 0 0 5px #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    pointer-events: none;
+    z-index: 10;
 }
 
-@keyframes rain-fall {
-    0% {
-        transform: translateY(-20px) scale(1);
-        opacity: 0.7;
-    }
-    80% {
-        opacity: 0.85;
-    }
-    100% {
-        transform: translateY(60px) scale(0.8);
-        opacity: 0.1;
-    }
-}
+/* Rain emoji animations removed - no longer needed */
 
-
-.storm-icon {
-    width: 70px;
-    height: 70px;
+.weather-icon {
+    width: 50px;
+    height: 50px;
     flex-shrink: 0;
-    filter: drop-shadow(0 2px 8px #222);
+    position: absolute;
+    right: 15px;
+    font-size: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: grayscale(1) brightness(2) sepia(1) saturate(10) hue-rotate(50deg);
+    text-shadow: 0 0 10px #00ff41;
+    transition: all 0.2s ease;
+}
+
+.weather-icon.lightning {
+    animation: lightning-flash 0.3s ease-in-out;
+    filter: grayscale(1) brightness(3) sepia(1) saturate(10) hue-rotate(50deg);
+    text-shadow: 0 0 20px #00ff41, 0 0 30px #00ff41;
+}
+
+@keyframes lightning-flash {
+    0%, 100% { 
+        transform: scale(1);
+        filter: grayscale(1) brightness(2) sepia(1) saturate(10) hue-rotate(50deg);
+    }
+    50% { 
+        transform: scale(1.15);
+        filter: grayscale(1) brightness(4) sepia(1) saturate(10) hue-rotate(50deg);
+    }
+}
+
+/* Legacy storm-icon styles removed */
+
+@keyframes icon-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
 }
 
  .button-row {
      display: flex;
      justify-content: center;
-     gap: 16px;
-     margin-top: 16px;
+     gap: 12px;
+     margin-top: 12px;
  }
- .thunder-btn {
-     background: linear-gradient(90deg, #f7971e, #ffd200);
-     color: #222;
-     font-weight: bold;
-     font-size: 1.1rem;
-     border: 2px solid #fff700;
-     box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-     transition: transform 0.1s, box-shadow 0.1s;
- }
- .thunder-btn:hover {
-     transform: scale(1.08);
-     box-shadow: 0 4px 16px rgba(255, 215, 0, 0.5);
-}
 
-.thunder-btn.active {
-    background: linear-gradient(90deg, #fff700, #f7971e);
-    color: #fff;
-    box-shadow: 0 0 24px 8px #ffd200, 0 2px 8px rgba(255, 215, 0, 0.5);
-    border-color: #fff;
-    transform: scale(1.12);
-}
-
-h1 {
-    text-align: center;
-    margin-bottom: 24px;
-}
 .controls label {
     display: block;
-    margin-bottom: 18px;
- }
+    margin-bottom: 14px;
+    color: #00ff41;
+    font-size: 0.9em;
+    text-shadow: 0 0 5px #00ff41;
+}
+
+.controls label span {
+    float: right;
+    color: #00ff41;
+    font-weight: 700;
+}
+
  #lowpassFilter {
      width: 100%;
  }
@@ -265,31 +378,132 @@ h1 {
  .range-group label {
      margin-bottom: 0;
  }
+
+/* Pip-Boy style range sliders */
 input[type=range] {
     width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: rgba(0, 255, 65, 0.2);
+    outline: none;
+    border-radius: 3px;
+    margin-top: 8px;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 255, 65, 0.3);
 }
-button {
-    width: 120px;
-    padding: 10px;
-    margin: 0;
-    border: none;
-    border-radius: 6px;
-    background: #3a7bd5;
-    color: #fff;
-    font-size: 1rem;
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #00ff41;
     cursor: pointer;
-    transition: background 0.2s;
+    border-radius: 2px;
+    box-shadow: 0 0 10px #00ff41, 0 0 20px rgba(0, 255, 65, 0.5);
+    border: 1px solid #00ff41;
 }
+
+input[type=range]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #00ff41;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 0 0 10px #00ff41, 0 0 20px rgba(0, 255, 65, 0.5);
+    border: 1px solid #00ff41;
+}
+
+input[type=range]::-webkit-slider-thumb:hover {
+    background: #66ff99;
+    box-shadow: 0 0 15px #00ff41, 0 0 30px rgba(0, 255, 65, 0.7);
+}
+
+input[type=range]::-moz-range-thumb:hover {
+    background: #66ff99;
+    box-shadow: 0 0 15px #00ff41, 0 0 30px rgba(0, 255, 65, 0.7);
+}
+
+button {
+    padding: 10px 16px;
+    margin: 0;
+    border: 2px solid #00ff41;
+    border-radius: 4px;
+    background: rgba(0, 255, 65, 0.15);
+    color: #00ff41;
+    font-size: 0.95em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    text-shadow: 0 0 5px #00ff41;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+}
+
+button:hover {
+    background: rgba(0, 255, 65, 0.25);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6), inset 0 0 10px rgba(0, 255, 65, 0.2);
+}
+
 /* Storm Toggle Button States */
 #stormToggleBtn.storm-start {
-    background: #27ae60 !important; /* Green */
-    color: #fff !important;
+    background: rgba(0, 255, 65, 0.2) !important;
+    color: #00ff41 !important;
+    border-color: #00ff41 !important;
 }
+
+#stormToggleBtn.storm-start:hover {
+    background: rgba(0, 255, 65, 0.35) !important;
+}
+
 #stormToggleBtn.storm-stop {
-    background: #c0392b !important; /* Red */
-    color: #fff !important;
+    background: rgba(255, 50, 50, 0.2) !important;
+    color: #ff3232 !important;
+    border-color: #ff3232 !important;
+    text-shadow: 0 0 5px #ff3232 !important;
+    box-shadow: 0 0 10px rgba(255, 50, 50, 0.3), inset 0 0 10px rgba(255, 50, 50, 0.1) !important;
 }
+
+#stormToggleBtn.storm-stop:hover {
+    background: rgba(255, 50, 50, 0.35) !important;
+    box-shadow: 0 0 20px rgba(255, 50, 50, 0.6), inset 0 0 10px rgba(255, 50, 50, 0.2) !important;
+}
+
 button:disabled {
-    background: #555;
+    background: rgba(50, 50, 50, 0.3);
+    color: #555;
+    border-color: #555;
     cursor: not-allowed;
+    text-shadow: none;
+    box-shadow: none;
+}
+
+.birds-mute-btn {
+    width: 100%;
+    font-size: 0.9em;
+    padding: 10px 16px;
+}
+
+.thunder-btn {
+    background: rgba(0, 255, 65, 0.2);
+    color: #00ff41;
+    font-weight: bold;
+    font-size: 1em;
+    border: 2px solid #00ff41;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    transition: all 0.2s;
+}
+
+.thunder-btn:hover {
+    background: rgba(0, 255, 65, 0.3);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+}
+
+.thunder-btn.active {
+    background: rgba(0, 255, 65, 0.4);
+    color: #00ff41;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.8), inset 0 0 15px rgba(0, 255, 65, 0.3);
+    border-color: #00ff41;
+    transform: scale(1.05);
 }

@@ -1,6 +1,11 @@
 // ==================== AUDIO SETUP ====================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+// Create analyzer for visualization
+const analyser = audioCtx.createAnalyser();
+analyser.fftSize = 2048;
+analyser.connect(audioCtx.destination);
+
 // Audio nodes
 const rainGainNode = audioCtx.createGain();
 const thunderGainNode = audioCtx.createGain();
@@ -39,14 +44,14 @@ rainEQNode.connect(lowpassFilterNode);
 // Rain reverb routing: split to wet (reverb) and dry paths BEFORE the shared lowpass
 rainEQNode.connect(rainDryGain).connect(lowpassFilterNode);
 rainEQNode.connect(rainReverbNode).connect(rainWetGain).connect(lowpassFilterNode);
-// Final rain output goes through lowpass to destination
-lowpassFilterNode.connect(audioCtx.destination);
+// Final rain output goes through lowpass to analyzer and destination
+lowpassFilterNode.connect(analyser);
 
 // Thunder reverb routing: thunder has its own reverb chain, then goes through lowpass
 thunderGainNode.connect(thunderDryGain).connect(lowpassFilterNode);
 thunderGainNode.connect(thunderReverbNode).connect(thunderWetGain).connect(lowpassFilterNode);
 
-birdsGainNode.connect(lowpassFilterNode).connect(audioCtx.destination);
+birdsGainNode.connect(lowpassFilterNode);
 
 // Sound paths
 const RAIN_SOUND = 'sounds/rain/rain-sound-188158.mp3';
@@ -75,6 +80,9 @@ let birdsFadeInterval = null;
 let thunderTimeout = null;
 let defaultMusicAudio = null;
 
+// Weather icon element
+let weatherIcon = null;
+
 // Note: Music does NOT auto-play. User must click "Play" button.
 // This respects browser autoplay policies and gives users full control.
 
@@ -93,7 +101,40 @@ let defaultMusicAudio = null;
         presetOutdoorBtn.addEventListener('click', () => applyPreset('outdoor'));
     }
     
-    // ===== PANEL STATE PERSISTENCE =====
+// ==================== WEATHER ICON FUNCTIONS ====================
+function updateWeatherIcon() {
+    if (!weatherIcon) return;
+    
+    const rainVolume = parseFloat(document.getElementById('rainVolume').value);
+    
+    // Determine icon based on rain volume
+    if (rainVolume === 0) {
+        weatherIcon.textContent = '☀️'; // Sunny - no rain
+    } else if (rainVolume < 0.3) {
+        weatherIcon.textContent = '⛅'; // Partly cloudy - light rain
+    } else if (rainVolume < 0.7) {
+        weatherIcon.textContent = '🌧️'; // Rain cloud - moderate rain
+    } else {
+        weatherIcon.textContent = '🌧️'; // Rain cloud - heavy rain (still just rain, no lightning)
+    }
+}
+
+function showLightningIcon() {
+    if (!weatherIcon) return;
+    
+    // Show thunder/lightning icon when thunder strikes
+    weatherIcon.textContent = '⛈️'; // Thunder cloud with lightning
+    
+    // Add lightning animation class
+    weatherIcon.classList.add('lightning');
+    
+    // Remove after animation completes and fade back to current rain level icon
+    setTimeout(() => {
+        weatherIcon.classList.remove('lightning');
+        updateWeatherIcon(); // Return to appropriate rain/cloud icon (no lightning)
+    }, 300);
+}
+
 function createImpulseResponse(duration, decay) {
     const sampleRate = audioCtx.sampleRate;
     const length = sampleRate * duration;
@@ -132,14 +173,14 @@ function applyPreset(presetName) {
     if (presetName === 'indoorcozy') {
         // Indoor Cozy: Max rain, heavy filtering, tiny room with reverb, music auto-plays
         rainVolumeSlider.value = 1;
-        thunderVolumeSlider.value = 0.5;
+        thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
-        musicVolumeSlider.value = 40;
+        musicVolumeSlider.value = 100;
         musicLowpassSlider.value = 22050; // Max - no filtering on music
         musicRoomSizeSlider.value = 0.02; // Very small room
-        musicReverbSlider.value = 0.60; // Higher reverb mix
+        musicReverbSlider.value = 0.80; // Higher reverb mix
         rainReverbSlider.value = 0.50; // Rain reverb for indoor space
-        thunderReverbSlider.value = 0.60; // Thunder reverb for indoor space
+        thunderReverbSlider.value = 0.30; // Thunder reverb for indoor space
         
         // Start music if not already playing
         if (!defaultMusicAudio || defaultMusicAudio.paused) {
@@ -149,9 +190,9 @@ function applyPreset(presetName) {
     } else if (presetName === 'indoor') {
         // Indoor: Same as Indoor Cozy but NO auto-play music
         rainVolumeSlider.value = 1;
-        thunderVolumeSlider.value = 0.5;
+        thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
-        musicVolumeSlider.value = 40;
+        musicVolumeSlider.value = 100;
         musicLowpassSlider.value = 22050; // Max - no filtering on music
         musicRoomSizeSlider.value = 0.02; // Very small room
         musicReverbSlider.value = 0.60; // Higher reverb mix
@@ -162,10 +203,10 @@ function applyPreset(presetName) {
         
     } else if (presetName === 'outdoor') {
         // Outdoor: Light rain, open sound, no reverb, no auto-play music
-        rainVolumeSlider.value = 0.25; // 1/4 volume
-        thunderVolumeSlider.value = 0.5; // Half way
+        rainVolumeSlider.value = 1; // Full volume
+        thunderVolumeSlider.value = 1; // Full volume
         lowpassFilterSlider.value = 22050; // Max - no filtering
-        musicVolumeSlider.value = 50; // Half volume
+        musicVolumeSlider.value = 100; // Full volume
         musicLowpassSlider.value = 22050; // Max - no filtering
         musicRoomSizeSlider.value = 0.02; // Small room
         musicReverbSlider.value = 0; // No reverb
@@ -348,23 +389,8 @@ function playThunder() {
     } while (THUNDER_SOUNDS.length > 1 && idx === lastThunderIndex);
     lastThunderIndex = idx;
     
-    const stormIcon = document.querySelector('.storm-icon');
-    if (stormIcon) {
-        const strikes = 1 + Math.floor(Math.random() * 3);
-        let i = 0;
-        
-        function flash() {
-            stormIcon.classList.add('active');
-            setTimeout(() => {
-                stormIcon.classList.remove('active');
-                i++;
-                if (i < strikes) {
-                    setTimeout(flash, 120 + Math.random() * 180);
-                }
-            }, 80 + Math.random() * 120);
-        }
-        flash();
-    }
+    // Show lightning effect on weather icon
+    showLightningIcon();
     
     fetch(THUNDER_SOUNDS[idx])
         .then(res => res.arrayBuffer())
@@ -407,8 +433,8 @@ function playDefaultMusic() {
         
         const musicSource = audioCtx.createMediaElementSource(defaultMusicAudio);
         musicSource.connect(musicLowpassNode);
-        musicLowpassNode.connect(musicDryGain).connect(audioCtx.destination);
-        musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(audioCtx.destination);
+        musicLowpassNode.connect(musicDryGain).connect(analyser);
+        musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(analyser);
         
         // Set initial volume from slider
         const musicVolumeSlider = document.getElementById('musicVolume');
@@ -442,6 +468,13 @@ function startStorm() {
         audioCtx.resume();
     }
     
+    // Set rain volume to 40% when starting storm (shows rain cloud icon)
+    const rainVolumeSlider = document.getElementById('rainVolume');
+    rainVolumeSlider.value = 0.4;
+    rainGainNode.gain.value = 0.4;
+    updateWeatherIcon();
+    updateBirdsVolume();
+    
     isPlaying = true;
     playRain();
     playBirds();
@@ -451,8 +484,6 @@ function startStorm() {
     btn.textContent = 'Stop Storm';
     btn.classList.remove('storm-start');
     btn.classList.add('storm-stop');
-    
-    showRainEmojis();
 }
 
 function stopStorm() {
@@ -465,12 +496,17 @@ function stopStorm() {
         thunderTimeout = null;
     }
     
+    // Reset rain volume to 0 when stopping storm (shows sun icon)
+    const rainVolumeSlider = document.getElementById('rainVolume');
+    rainVolumeSlider.value = 0;
+    rainGainNode.gain.value = 0;
+    updateWeatherIcon();
+    updateBirdsVolume();
+    
     const btn = document.getElementById('stormToggleBtn');
     btn.textContent = 'Start Storm';
     btn.classList.remove('storm-stop');
     btn.classList.add('storm-start');
-    
-    hideRainEmojis();
 }
 
 function toggleStorm() {
@@ -482,116 +518,17 @@ function toggleStorm() {
 }
 
 // ==================== RAIN EMOJI ANIMATION ====================
-let rainActive = false;
-let rainDrops = [];
-let rainAnimFrame = null;
-const MAX_DROPS = 64;
-
-function showRainEmojis() {
-    if (rainActive) return;
-    
-    rainActive = true;
-    const container = document.getElementById('rain-emoji-container');
-    container.style.display = 'block';
-    
-    const rainVolume = parseFloat(document.getElementById('rainVolume').value);
-    const dropCount = rainVolume === 0 ? 0 : Math.max(2, Math.round(rainVolume * MAX_DROPS));
-    
-    if (dropCount > 0) {
-        createRainDrops(dropCount);
-        animateRainDrops();
-    }
-}
-
-function hideRainEmojis() {
-    rainActive = false;
-    const container = document.getElementById('rain-emoji-container');
-    container.style.display = 'none';
-    container.innerHTML = '';
-    rainDrops = [];
-    
-    if (rainAnimFrame) {
-        cancelAnimationFrame(rainAnimFrame);
-        rainAnimFrame = null;
-    }
-}
-
-function createRainDrops(targetCount) {
-    const container = document.getElementById('rain-emoji-container');
-    const titleRow = document.querySelector('.title-row');
-    const width = titleRow.offsetWidth;
-    const minSpacing = 32;
-    
-    const existingX = rainDrops.map(d => d._x);
-    const dropsToAdd = targetCount - rainDrops.length;
-    
-    if (dropsToAdd <= 0) return;
-    
-    const spawnInterval = 4000 / dropsToAdd;
-    let added = 0;
-    
-    function spawnDrop() {
-        let x = Math.random() * (width - minSpacing);
-        
-        for (let i = 0; i < 10; i++) {
-            if (existingX.every(ex => Math.abs(ex - x) >= minSpacing)) break;
-            x = Math.random() * (width - minSpacing);
-        }
-        
-        const drop = document.createElement('span');
-        drop.className = 'rain-drop';
-        drop.textContent = '💧';
-        drop._x = x;
-        drop._y = -60;
-        drop._speed = 1.5;
-        drop.style.left = x + 'px';
-        drop.style.top = drop._y + 'px';
-        
-        container.appendChild(drop);
-        rainDrops.push(drop);
-        existingX.push(x);
-        
-        added++;
-        if (added < dropsToAdd) {
-            setTimeout(spawnDrop, spawnInterval);
-        }
-    }
-    
-    spawnDrop();
-}
-
-function animateRainDrops() {
-    if (!rainActive) return;
-    
-    const titleRow = document.querySelector('.title-row');
-    const height = titleRow.offsetHeight;
-    const rainVolume = parseFloat(document.getElementById('rainVolume').value);
-    const targetCount = rainVolume === 0 ? 0 : Math.max(2, Math.round(rainVolume * MAX_DROPS));
-    
-    for (let i = rainDrops.length - 1; i >= 0; i--) {
-        const drop = rainDrops[i];
-        drop._y += drop._speed;
-        drop.style.top = drop._y + 'px';
-        drop.style.opacity = Math.max(0.2, Math.min(0.9, rainVolume + 0.2));
-        
-        if (drop._y > height + 20) {
-            drop.remove();
-            rainDrops.splice(i, 1);
-        }
-    }
-    
-    if (rainDrops.length < targetCount) {
-        createRainDrops(targetCount);
-    }
-    
-    rainAnimFrame = requestAnimationFrame(animateRainDrops);
-}
+// Rain emoji animation removed - no longer needed
 
 // ==================== DOM INITIALIZATION ====================
 window.addEventListener('DOMContentLoaded', () => {
     // Pre-load audio buffers (doesn't play yet)
     loadBirds();
     loadRainBuffer();
+    
+    // Get weather icon element
+    weatherIcon = document.getElementById('weather-icon');
+    updateWeatherIcon();
     
     // Set up reverb nodes with corrected decay (all use same room size)
     const defaultRoomDecay = 2; // Default room size 1.0 * 2 = decay 2
@@ -624,10 +561,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const thunderReverbSlider = document.getElementById('thunderReverb');
     
     // Apply Outdoor preset defaults
-    rainVolumeSlider.value = 0.25;
-    thunderVolumeSlider.value = 0.5;
+    rainVolumeSlider.value = 0;
+    thunderVolumeSlider.value = 1;
     lowpassFilterSlider.value = 22050;
-    musicVolumeSlider.value = 50;
+    musicVolumeSlider.value = 100;
     musicLowpassSlider.value = 22050;
     musicRoomSizeSlider.value = 0.02;
     musicReverbSlider.value = 0;
@@ -635,8 +572,8 @@ window.addEventListener('DOMContentLoaded', () => {
     thunderReverbSlider.value = 0;
     
     // Set initial gain nodes from Outdoor preset values
-    rainGainNode.gain.value = 0.25;
-    thunderGainNode.gain.value = 0.5;
+    rainGainNode.gain.value = 0;
+    thunderGainNode.gain.value = 1;
     lowpassFilterNode.frequency.value = 22050;
     musicLowpassNode.frequency.value = 22050;
     
@@ -668,6 +605,7 @@ window.addEventListener('DOMContentLoaded', () => {
     rainVolumeSlider.addEventListener('input', () => {
         rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
         updateBirdsVolume();
+        updateWeatherIcon();
     });
     
     // ===== THUNDER VOLUME =====
@@ -797,10 +735,10 @@ window.addEventListener('DOMContentLoaded', () => {
         musicReverbNode.buffer = createImpulseResponse(2, decay);
         rainReverbNode.buffer = createImpulseResponse(2, decay);
         thunderReverbNode.buffer = createImpulseResponse(2, decay);
-        musicRoomSizeLabel.textContent = sliderValue.toFixed(2);
+        thunderReverbLabel.textContent = mix.toFixed(2);
     });
     
-    const stormIcon = document.querySelector('.storm-icon');
+    const stormIcon = weatherIcon; // Use weather icon for click interaction
     if (stormIcon) {
         stormIcon.style.cursor = 'pointer';
         stormIcon.addEventListener('click', () => {
@@ -826,3 +764,73 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// ==================== WAVEFORM VISUALIZER ====================
+const canvas = document.getElementById('waveform');
+const canvasCtx = canvas.getContext('2d');
+
+// Use the analyzer already created at the top
+const bufferLength = analyser.frequencyBinCount;
+const dataArray = new Uint8Array(bufferLength);
+
+function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+}
+
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function drawWaveform() {
+    requestAnimationFrame(drawWaveform);
+    
+    analyser.getByteTimeDomainData(dataArray);
+    
+    canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw grid lines
+    canvasCtx.strokeStyle = 'rgba(0, 255, 65, 0.1)';
+    canvasCtx.lineWidth = 1;
+    
+    // Horizontal center line
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(0, canvas.height / 2);
+    canvasCtx.lineTo(canvas.width, canvas.height / 2);
+    canvasCtx.stroke();
+    
+    // Waveform
+    canvasCtx.lineWidth = 2;
+    canvasCtx.strokeStyle = '#00ff41';
+    canvasCtx.shadowBlur = 10;
+    canvasCtx.shadowColor = '#00ff41';
+    
+    canvasCtx.beginPath();
+    
+    const sliceWidth = canvas.width / bufferLength;
+    let x = 0;
+    
+    // Amplify the waveform by 3x for more dramatic visualization
+    const amplification = 3;
+    
+    for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = ((v - 1) * amplification + 1) * canvas.height / 2;
+        
+        if (i === 0) {
+            canvasCtx.moveTo(x, y);
+        } else {
+            canvasCtx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+    }
+    
+    canvasCtx.lineTo(canvas.width, canvas.height / 2);
+    canvasCtx.stroke();
+    
+    canvasCtx.shadowBlur = 0;
+}
+
+// Start the visualizer
+drawWaveform();
