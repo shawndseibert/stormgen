@@ -23,6 +23,37 @@ const thunderReverbNode = audioCtx.createConvolver();
 const thunderWetGain = audioCtx.createGain();
 const thunderDryGain = audioCtx.createGain();
 
+// Radio-style EQ nodes for vintage sound
+const musicEQBass = audioCtx.createBiquadFilter();
+const musicEQMidBass = audioCtx.createBiquadFilter();
+const musicEQMid = audioCtx.createBiquadFilter();
+const musicEQMidTreble = audioCtx.createBiquadFilter();
+const musicEQTreble = audioCtx.createBiquadFilter();
+
+// Configure EQ nodes
+musicEQBass.type = 'lowshelf';
+musicEQBass.frequency.value = 200;
+musicEQBass.gain.value = 0;
+
+musicEQMidBass.type = 'peaking';
+musicEQMidBass.frequency.value = 500;
+musicEQMidBass.Q.value = 1.0;
+musicEQMidBass.gain.value = 0;
+
+musicEQMid.type = 'peaking';
+musicEQMid.frequency.value = 1500;
+musicEQMid.Q.value = 1.0;
+musicEQMid.gain.value = 0;
+
+musicEQMidTreble.type = 'peaking';
+musicEQMidTreble.frequency.value = 4000;
+musicEQMidTreble.Q.value = 1.0;
+musicEQMidTreble.gain.value = 0;
+
+musicEQTreble.type = 'highshelf';
+musicEQTreble.frequency.value = 8000;
+musicEQTreble.gain.value = 0;
+
 // Configure audio nodes with default values
 lowpassFilterNode.type = 'lowpass';
 lowpassFilterNode.frequency.value = 22050;
@@ -79,35 +110,108 @@ let birdsMuted = false;
 let birdsFadeInterval = null;
 let thunderTimeout = null;
 let defaultMusicAudio = null;
+let hasStartedStormBefore = false; // Track if storm has been manually started before
+
+// User playlist state
+let userPlaylist = []; // Array of {name, url, blob}
+let currentTrackIndex = -1;
+let userMusicAudio = null;
+let db = null; // IndexedDB database
 
 // Weather icon element
 let weatherIcon = null;
 
+// ==================== INDEXEDDB SETUP ====================
+function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('StormGenMusicDB', 1);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            db = request.result;
+            resolve(db);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const database = event.target.result;
+            if (!database.objectStoreNames.contains('tracks')) {
+                database.createObjectStore('tracks', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+    });
+}
+
+// Save track to IndexedDB
+function saveTrackToDB(name, blob) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject('Database not initialized');
+        
+        const transaction = db.transaction(['tracks'], 'readwrite');
+        const store = transaction.objectStore('tracks');
+        const request = store.add({ name, blob });
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Load all tracks from IndexedDB
+function loadTracksFromDB() {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject('Database not initialized');
+        
+        const transaction = db.transaction(['tracks'], 'readonly');
+        const store = transaction.objectStore('tracks');
+        const request = store.getAll();
+        
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Delete track from IndexedDB
+function deleteTrackFromDB(id) {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject('Database not initialized');
+        
+        const transaction = db.transaction(['tracks'], 'readwrite');
+        const store = transaction.objectStore('tracks');
+        const request = store.delete(id);
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Clear all tracks from IndexedDB
+function clearTracksFromDB() {
+    return new Promise((resolve, reject) => {
+        if (!db) return reject('Database not initialized');
+        
+        const transaction = db.transaction(['tracks'], 'readwrite');
+        const store = transaction.objectStore('tracks');
+        const request = store.clear();
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
 // Note: Music does NOT auto-play. User must click "Play" button.
 // This respects browser autoplay policies and gives users full control.
-
-    // ===== PRESET BUTTONS =====
-    const presetIndoorCozyBtn = document.getElementById('presetIndoorCozy');
-    const presetIndoorBtn = document.getElementById('presetIndoor');
-    const presetOutdoorBtn = document.getElementById('presetOutdoor');
-    
-    if (presetIndoorCozyBtn) {
-        presetIndoorCozyBtn.addEventListener('click', () => applyPreset('indoorcozy'));
-    }
-    if (presetIndoorBtn) {
-        presetIndoorBtn.addEventListener('click', () => applyPreset('indoor'));
-    }
-    if (presetOutdoorBtn) {
-        presetOutdoorBtn.addEventListener('click', () => applyPreset('outdoor'));
-    }
-    
 // ==================== WEATHER ICON FUNCTIONS ====================
 function updateWeatherIcon() {
     if (!weatherIcon) return;
     
+    // If storm is not playing, always show sun icon
+    if (!isPlaying) {
+        weatherIcon.textContent = '☀️'; // Sunny - no storm
+        return;
+    }
+    
     const rainVolume = parseFloat(document.getElementById('rainVolume').value);
     
-    // Determine icon based on rain volume
+    // Determine icon based on rain volume when storm is active
     if (rainVolume === 0) {
         weatherIcon.textContent = '☀️'; // Sunny - no rain
     } else if (rainVolume < 0.3) {
@@ -171,7 +275,7 @@ function applyPreset(presetName) {
     }
     
     if (presetName === 'indoorcozy') {
-        // Indoor Cozy: Max rain, heavy filtering, tiny room with reverb, music auto-plays
+        // Indoor Cozy: 100% rain, heavy filtering, tiny room with reverb
         rainVolumeSlider.value = 1;
         thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
@@ -182,13 +286,10 @@ function applyPreset(presetName) {
         rainReverbSlider.value = 0.50; // Rain reverb for indoor space
         thunderReverbSlider.value = 0.30; // Thunder reverb for indoor space
         
-        // Start music if not already playing
-        if (!defaultMusicAudio || defaultMusicAudio.paused) {
-            playDefaultMusic();
-        }
+        // Do NOT auto-play music for Indoor Cozy preset
         
     } else if (presetName === 'indoor') {
-        // Indoor: Same as Indoor Cozy but NO auto-play music
+        // Indoor: 100% rain, heavy filtering, medium reverb
         rainVolumeSlider.value = 1;
         thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
@@ -202,9 +303,9 @@ function applyPreset(presetName) {
         // Do NOT auto-play music for Indoor preset
         
     } else if (presetName === 'outdoor') {
-        // Outdoor: Light rain, open sound, no reverb, no auto-play music
-        rainVolumeSlider.value = 1; // Full volume
-        thunderVolumeSlider.value = 1; // Full volume
+        // Outdoor: 50% rain, open sound, no reverb
+        rainVolumeSlider.value = 0.5;
+        thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 22050; // Max - no filtering
         musicVolumeSlider.value = 100; // Full volume
         musicLowpassSlider.value = 22050; // Max - no filtering
@@ -227,9 +328,12 @@ function applyPreset(presetName) {
     rainReverbSlider.dispatchEvent(new Event('input'));
     thunderReverbSlider.dispatchEvent(new Event('input'));
     
-    // Start storm if not already playing
+    // Mark that storm has been configured (preset applied)
+    hasStartedStormBefore = true;
+    
+    // Start storm if not already playing (don't override rain volume)
     if (!isPlaying) {
-        startStorm();
+        startStorm(true); // Pass true to indicate we're starting from a preset
     }
 }
 
@@ -441,15 +545,30 @@ function playDefaultMusic() {
         if (musicVolumeSlider) {
             defaultMusicAudio.volume = parseFloat(musicVolumeSlider.value) / 100;
         }
+        
+        // Add track position update listeners
+        defaultMusicAudio.addEventListener('timeupdate', updateTrackPosition);
+        defaultMusicAudio.addEventListener('loadedmetadata', updateTrackDuration);
     }
     
     defaultMusicAudio.play().catch(err => {
         console.error('Music playback failed:', err);
     });
+    
+    // Update button text
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '⏸ Pause';
+    
+    // Update current track display
+    updateCurrentTrackDisplay();
 }
 
 function pauseDefaultMusic() {
     if (defaultMusicAudio) defaultMusicAudio.pause();
+    
+    // Update button text
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '▶ Play';
 }
 
 function stopDefaultMusic() {
@@ -457,10 +576,452 @@ function stopDefaultMusic() {
         defaultMusicAudio.pause();
         defaultMusicAudio.currentTime = 0;
     }
+    
+    // Update button text
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '▶ Play';
+    
+    // Update current track display
+    updateCurrentTrackDisplay();
+}
+
+// ==================== USER PLAYLIST FUNCTIONS ====================
+// Load playlist from IndexedDB
+async function loadPlaylistFromStorage() {
+    try {
+        const tracks = await loadTracksFromDB();
+        userPlaylist = tracks.map(track => ({
+            id: track.id,
+            name: track.name,
+            url: URL.createObjectURL(track.blob),
+            blob: track.blob
+        }));
+        renderPlaylist();
+        updateCurrentTrackDisplay();
+    } catch (e) {
+        console.error('Failed to load playlist:', e);
+    }
+}
+
+// Upload MP3 files
+async function handleMusicUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type === 'audio/mpeg' || file.type === 'audio/mp3') {
+            try {
+                // Save to IndexedDB
+                const id = await saveTrackToDB(file.name, file);
+                
+                // Add to playlist
+                const url = URL.createObjectURL(file);
+                userPlaylist.push({
+                    id: id,
+                    name: file.name,
+                    url: url,
+                    blob: file
+                });
+            } catch (e) {
+                console.error('Failed to save track:', e);
+            }
+        }
+    }
+    
+    renderPlaylist();
+    
+    // Auto-select first track if none selected
+    if (currentTrackIndex === -1 && userPlaylist.length > 0) {
+        loadTrack(0);
+    }
+}
+
+// Render playlist UI
+function renderPlaylist() {
+    const container = document.getElementById('playlist-items');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    userPlaylist.forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = 'playlist-item';
+        if (index === currentTrackIndex) {
+            item.classList.add('active');
+        }
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'track-name';
+        nameSpan.textContent = track.name;
+        nameSpan.onclick = () => loadTrack(index);
+        
+        const controls = document.createElement('div');
+        controls.className = 'track-controls';
+        
+        // Move up button
+        if (index > 0) {
+            const upBtn = document.createElement('button');
+            upBtn.textContent = '▲';
+            upBtn.className = 'track-btn';
+            upBtn.onclick = (e) => {
+                e.stopPropagation();
+                moveTrack(index, -1);
+            };
+            controls.appendChild(upBtn);
+        }
+        
+        // Move down button
+        if (index < userPlaylist.length - 1) {
+            const downBtn = document.createElement('button');
+            downBtn.textContent = '▼';
+            downBtn.className = 'track-btn';
+            downBtn.onclick = (e) => {
+                e.stopPropagation();
+                moveTrack(index, 1);
+            };
+            controls.appendChild(downBtn);
+        }
+        
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '✕';
+        deleteBtn.className = 'track-btn delete-btn';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteTrack(index);
+        };
+        controls.appendChild(deleteBtn);
+        
+        item.appendChild(nameSpan);
+        item.appendChild(controls);
+        container.appendChild(item);
+    });
+}
+
+// Move track up or down in playlist
+function moveTrack(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= userPlaylist.length) return;
+    
+    // Swap tracks
+    const temp = userPlaylist[index];
+    userPlaylist[index] = userPlaylist[newIndex];
+    userPlaylist[newIndex] = temp;
+    
+    // Update current track index if needed
+    if (currentTrackIndex === index) {
+        currentTrackIndex = newIndex;
+    } else if (currentTrackIndex === newIndex) {
+        currentTrackIndex = index;
+    }
+    
+    renderPlaylist();
+}
+
+// Delete track from playlist
+async function deleteTrack(index) {
+    const track = userPlaylist[index];
+    
+    // Revoke object URL to free memory
+    if (track.url) {
+        URL.revokeObjectURL(track.url);
+    }
+    
+    // Delete from IndexedDB
+    if (track.id) {
+        try {
+            await deleteTrackFromDB(track.id);
+        } catch (e) {
+            console.error('Failed to delete track from DB:', e);
+        }
+    }
+    
+    userPlaylist.splice(index, 1);
+    
+    // Update current track index
+    if (currentTrackIndex === index) {
+        stopUserMusic();
+        currentTrackIndex = -1;
+        updateCurrentTrackDisplay();
+    } else if (currentTrackIndex > index) {
+        currentTrackIndex--;
+    }
+    
+    renderPlaylist();
+}
+
+// Clear entire playlist
+async function clearPlaylist() {
+    // Stop music if playing
+    stopUserMusic();
+    
+    // Revoke all object URLs to free memory
+    userPlaylist.forEach(track => {
+        if (track.url) {
+            URL.revokeObjectURL(track.url);
+        }
+    });
+    
+    // Clear from IndexedDB
+    try {
+        await clearTracksFromDB();
+    } catch (e) {
+        console.error('Failed to clear tracks from DB:', e);
+    }
+    
+    // Clear playlist and reset state
+    userPlaylist = [];
+    currentTrackIndex = -1;
+    
+    // Update UI
+    renderPlaylist();
+    updateCurrentTrackDisplay();
+}
+
+// Load a track by index
+function loadTrack(index) {
+    if (index < 0 || index >= userPlaylist.length) return;
+    
+    const wasPlaying = userMusicAudio && !userMusicAudio.paused;
+    
+    stopUserMusic();
+    currentTrackIndex = index;
+    
+    if (wasPlaying) {
+        playUserMusic();
+    }
+    
+    updateCurrentTrackDisplay();
+    renderPlaylist();
+}
+
+// Play previous track
+function playPrevTrack() {
+    if (userPlaylist.length === 0) return;
+    
+    let newIndex = currentTrackIndex - 1;
+    if (newIndex < 0) {
+        newIndex = userPlaylist.length - 1; // Loop to end
+    }
+    
+    loadTrack(newIndex);
+    playUserMusic();
+}
+
+// Play next track
+function playNextTrack() {
+    if (userPlaylist.length === 0) return;
+    
+    let newIndex = currentTrackIndex + 1;
+    if (newIndex >= userPlaylist.length) {
+        newIndex = 0; // Loop to beginning
+    }
+    
+    loadTrack(newIndex);
+    playUserMusic();
+}
+
+// Update current track display
+function updateCurrentTrackDisplay() {
+    const display = document.getElementById('current-track-display');
+    if (!display) return;
+    
+    if (currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
+        display.textContent = `🎵 ${userPlaylist[currentTrackIndex].name}`;
+    } else if (defaultMusicAudio && !defaultMusicAudio.paused) {
+        display.textContent = '🎵 Default Music';
+    } else {
+        display.textContent = 'No track loaded';
+    }
+}
+
+// Play user music with full audio chain
+function playUserMusic() {
+    if (currentTrackIndex < 0 || currentTrackIndex >= userPlaylist.length) return;
+    
+    const track = userPlaylist[currentTrackIndex];
+    if (!track.url) return;
+    
+    // Resume AudioContext if suspended
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    
+    if (!userMusicAudio) {
+        userMusicAudio = new Audio();
+        
+        const musicSource = audioCtx.createMediaElementSource(userMusicAudio);
+        
+        // Connect through EQ chain: source -> EQ bands -> lowpass -> reverb -> analyzer
+        musicSource.connect(musicEQBass);
+        musicEQBass.connect(musicEQMidBass);
+        musicEQMidBass.connect(musicEQMid);
+        musicEQMid.connect(musicEQMidTreble);
+        musicEQMidTreble.connect(musicEQTreble);
+        musicEQTreble.connect(musicLowpassNode);
+        musicLowpassNode.connect(musicDryGain).connect(analyser);
+        musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(analyser);
+        
+        // Set initial volume
+        const musicVolumeSlider = document.getElementById('musicVolume');
+        if (musicVolumeSlider) {
+            userMusicAudio.volume = parseFloat(musicVolumeSlider.value) / 100;
+        }
+        
+        // Auto-advance to next track when current ends
+        userMusicAudio.addEventListener('ended', () => {
+            playNextTrack();
+        });
+        
+        // Update track position as song plays
+        userMusicAudio.addEventListener('timeupdate', updateTrackPosition);
+        userMusicAudio.addEventListener('loadedmetadata', updateTrackDuration);
+    }
+    
+    // If audio is paused, just resume; otherwise load new track
+    if (userMusicAudio.paused && userMusicAudio.src === track.url) {
+        // Simply resume playback at current position
+        userMusicAudio.play().catch(err => {
+            console.error('Music playback failed:', err);
+        });
+    } else {
+        // Load and play new track
+        userMusicAudio.src = track.url;
+        userMusicAudio.play().catch(err => {
+            console.error('Music playback failed:', err);
+        });
+    }
+    
+    // Update button text
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '⏸ Pause';
+}
+
+// Pause user music
+function pauseUserMusic() {
+    if (userMusicAudio) {
+        userMusicAudio.pause();
+    }
+    
+    // Update button text
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '▶ Play';
+}
+
+// Stop user music
+function stopUserMusic() {
+    if (userMusicAudio) {
+        userMusicAudio.pause();
+        userMusicAudio.currentTime = 0;
+    }
+    
+    // Update button text
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '▶ Play';
+}
+
+// ==================== TRACK POSITION FUNCTIONS ====================
+function updateTrackPosition() {
+    // Use whichever audio is currently active
+    const activeAudio = (userMusicAudio && !userMusicAudio.paused) ? userMusicAudio : defaultMusicAudio;
+    if (!activeAudio || !activeAudio.duration) return;
+    
+    const positionSlider = document.getElementById('trackPosition');
+    const currentTimeDisplay = document.getElementById('currentTime');
+    
+    if (positionSlider && !positionSlider.dataset.seeking) {
+        const percentage = (activeAudio.currentTime / activeAudio.duration) * 100;
+        positionSlider.value = percentage;
+    }
+    
+    if (currentTimeDisplay) {
+        currentTimeDisplay.textContent = formatTime(activeAudio.currentTime);
+    }
+}
+
+function updateTrackDuration() {
+    // Use whichever audio is currently active
+    const activeAudio = (userMusicAudio && userMusicAudio.src) ? userMusicAudio : defaultMusicAudio;
+    if (!activeAudio || !activeAudio.duration) return;
+    
+    const totalTimeDisplay = document.getElementById('totalTime');
+    if (totalTimeDisplay) {
+        totalTimeDisplay.textContent = formatTime(activeAudio.duration);
+    }
+}
+
+function formatTime(seconds) {
+    if (isNaN(seconds) || seconds === Infinity) return '0:00';
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function seekTrack(percentage) {
+    // Use whichever audio is currently active
+    const activeAudio = (userMusicAudio && !userMusicAudio.paused) ? userMusicAudio : defaultMusicAudio;
+    if (!activeAudio || !activeAudio.duration) return;
+    
+    const newTime = (percentage / 100) * activeAudio.duration;
+    activeAudio.currentTime = newTime;
+}
+
+// ==================== RADIO EQ PRESETS ====================
+function applyRadioEQPreset(presetName) {
+    const eqBassSlider = document.getElementById('eqBass');
+    const eqMidBassSlider = document.getElementById('eqMidBass');
+    const eqMidSlider = document.getElementById('eqMid');
+    const eqMidTrebleSlider = document.getElementById('eqMidTreble');
+    const eqTrebleSlider = document.getElementById('eqTreble');
+    
+    if (!eqBassSlider || !eqMidBassSlider || !eqMidSlider || !eqMidTrebleSlider || !eqTrebleSlider) return;
+    
+    // Different EQ curves for vintage radio sounds
+    if (presetName === 'modern') {
+        // Flat response
+        eqBassSlider.value = 0;
+        eqMidBassSlider.value = 0;
+        eqMidSlider.value = 0;
+        eqMidTrebleSlider.value = 0;
+        eqTrebleSlider.value = 0;
+        
+    } else if (presetName === 'vintage') {
+        // Vintage radio: boosted mids, rolled off bass and treble
+        eqBassSlider.value = -8;
+        eqMidBassSlider.value = 2;
+        eqMidSlider.value = 6;
+        eqMidTrebleSlider.value = 4;
+        eqTrebleSlider.value = -6;
+        
+    } else if (presetName === 'am') {
+        // AM radio: very limited frequency range, boxy sound
+        eqBassSlider.value = -10;
+        eqMidBassSlider.value = -2;
+        eqMidSlider.value = 8;
+        eqMidTrebleSlider.value = 2;
+        eqTrebleSlider.value = -10;
+        
+    } else if (presetName === 'gramophone') {
+        // Gramophone: heavily limited, nasal, lo-fi
+        eqBassSlider.value = -12;
+        eqMidBassSlider.value = -4;
+        eqMidSlider.value = 10;
+        eqMidTrebleSlider.value = 6;
+        eqTrebleSlider.value = -12;
+    }
+    
+    // Trigger input events to update audio nodes and labels
+    eqBassSlider.dispatchEvent(new Event('input'));
+    eqMidBassSlider.dispatchEvent(new Event('input'));
+    eqMidSlider.dispatchEvent(new Event('input'));
+    eqMidTrebleSlider.dispatchEvent(new Event('input'));
+    eqTrebleSlider.dispatchEvent(new Event('input'));
 }
 
 // ==================== STORM CONTROL ====================
-function startStorm() {
+function startStorm(fromPreset = false) {
     if (isPlaying) return;
     
     // Resume AudioContext if suspended (required by browsers)
@@ -468,16 +1029,28 @@ function startStorm() {
         audioCtx.resume();
     }
     
-    // Set rain volume to 40% when starting storm (shows rain cloud icon)
     const rainVolumeSlider = document.getElementById('rainVolume');
-    rainVolumeSlider.value = 0.4;
-    rainGainNode.gain.value = 0.4;
+    
+    // Only set rain volume to 50% on very first manual start (not from preset)
+    if (!fromPreset && !hasStartedStormBefore) {
+        rainVolumeSlider.value = 0.5;
+        hasStartedStormBefore = true; // Mark that storm has been started
+    }
+    
+    // Always restore rain gain from slider value (preserves user/preset settings)
+    rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+    
     updateWeatherIcon();
     updateBirdsVolume();
     
     isPlaying = true;
     playRain();
     playBirds();
+    
+    // Play immediate thunder when storm starts (announces the storm)
+    playThunder();
+    
+    // Then schedule regular thunder intervals
     scheduleThunder();
     
     const btn = document.getElementById('stormToggleBtn');
@@ -496,11 +1069,9 @@ function stopStorm() {
         thunderTimeout = null;
     }
     
-    // Reset rain volume to 0 when stopping storm (shows sun icon)
-    const rainVolumeSlider = document.getElementById('rainVolume');
-    rainVolumeSlider.value = 0;
+    // Set rain audio to 0 without changing slider (preserves user setting)
     rainGainNode.gain.value = 0;
-    updateWeatherIcon();
+    updateWeatherIcon(); // Will show sun icon since isPlaying = false
     updateBirdsVolume();
     
     const btn = document.getElementById('stormToggleBtn');
@@ -521,10 +1092,18 @@ function toggleStorm() {
 // Rain emoji animation removed - no longer needed
 
 // ==================== DOM INITIALIZATION ====================
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     // Pre-load audio buffers (doesn't play yet)
     loadBirds();
     loadRainBuffer();
+    
+    // Initialize IndexedDB and load user playlist
+    try {
+        await initIndexedDB();
+        await loadPlaylistFromStorage();
+    } catch (e) {
+        console.error('Failed to initialize music database:', e);
+    }
     
     // Get weather icon element
     weatherIcon = document.getElementById('weather-icon');
@@ -600,6 +1179,21 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('thunderReverbLabel').textContent = '0.00';
     document.getElementById('frequencyLabel').textContent = '5-60s';
     
+    // ===== WEATHER PRESET BUTTONS =====
+    const presetIndoorCozyBtn = document.getElementById('presetIndoorCozy');
+    const presetIndoorBtn = document.getElementById('presetIndoor');
+    const presetOutdoorBtn = document.getElementById('presetOutdoor');
+    
+    if (presetIndoorCozyBtn) {
+        presetIndoorCozyBtn.addEventListener('click', () => applyPreset('indoorcozy'));
+    }
+    if (presetIndoorBtn) {
+        presetIndoorBtn.addEventListener('click', () => applyPreset('indoor'));
+    }
+    if (presetOutdoorBtn) {
+        presetOutdoorBtn.addEventListener('click', () => applyPreset('outdoor'));
+    }
+    
     // ===== RAIN VOLUME =====
     
     rainVolumeSlider.addEventListener('input', () => {
@@ -671,15 +1265,186 @@ window.addEventListener('DOMContentLoaded', () => {
     
     updateBirdsMuteBtn();
     
-    const musicPlayBtn = document.getElementById('musicPlayBtn');
-    const musicPauseBtn = document.getElementById('musicPauseBtn');
+    // ===== MUSIC PLAYBACK CONTROLS =====
+    const musicPlayPauseBtn = document.getElementById('musicPlayPauseBtn');
     const musicStopBtn = document.getElementById('musicStopBtn');
+    const musicPrevBtn = document.getElementById('musicPrevBtn');
+    const musicNextBtn = document.getElementById('musicNextBtn');
     
-    musicPlayBtn.addEventListener('click', playDefaultMusic);
-    musicPauseBtn.addEventListener('click', pauseDefaultMusic);
-    musicStopBtn.addEventListener('click', stopDefaultMusic);
+    // Combined Play/Pause button
+    musicPlayPauseBtn.addEventListener('click', () => {
+        // Check if user music is playing
+        const isUserMusicPlaying = userMusicAudio && !userMusicAudio.paused;
+        // Check if default music is playing
+        const isDefaultMusicPlaying = defaultMusicAudio && !defaultMusicAudio.paused;
+        
+        if (isUserMusicPlaying || isDefaultMusicPlaying) {
+            // If any music is playing, pause it
+            if (isUserMusicPlaying) {
+                pauseUserMusic();
+            } else {
+                pauseDefaultMusic();
+            }
+            musicPlayPauseBtn.textContent = '▶ Play';
+        } else {
+            // If music is paused/stopped, play it
+            // Stop default music if it's playing
+            if (defaultMusicAudio && !defaultMusicAudio.paused) {
+                stopDefaultMusic();
+            }
+            
+            // If user has playlist, use that; otherwise fall back to default
+            if (userPlaylist.length > 0) {
+                playUserMusic();
+            } else {
+                playDefaultMusic(); // Fallback to default if no playlist
+            }
+            musicPlayPauseBtn.textContent = '⏸ Pause';
+        }
+    });
+    
+    musicStopBtn.addEventListener('click', () => {
+        if (userPlaylist.length > 0 && userMusicAudio) {
+            stopUserMusic();
+        } else {
+            stopDefaultMusic();
+        }
+        musicPlayPauseBtn.textContent = '▶ Play';
+    });
+    
+    if (musicPrevBtn) {
+        musicPrevBtn.addEventListener('click', playPrevTrack);
+    }
+    
+    if (musicNextBtn) {
+        musicNextBtn.addEventListener('click', playNextTrack);
+    }
+    
+    // ===== TRACK POSITION SLIDER =====
+    const trackPositionSlider = document.getElementById('trackPosition');
+    
+    if (trackPositionSlider) {
+        // When user starts dragging
+        trackPositionSlider.addEventListener('mousedown', () => {
+            trackPositionSlider.dataset.seeking = 'true';
+        });
+        
+        // When user stops dragging
+        trackPositionSlider.addEventListener('mouseup', () => {
+            seekTrack(parseFloat(trackPositionSlider.value));
+            delete trackPositionSlider.dataset.seeking;
+        });
+        
+        // For touch devices
+        trackPositionSlider.addEventListener('touchstart', () => {
+            trackPositionSlider.dataset.seeking = 'true';
+        });
+        
+        trackPositionSlider.addEventListener('touchend', () => {
+            seekTrack(parseFloat(trackPositionSlider.value));
+            delete trackPositionSlider.dataset.seeking;
+        });
+        
+        // Allow seeking by clicking anywhere on the slider
+        trackPositionSlider.addEventListener('click', () => {
+            seekTrack(parseFloat(trackPositionSlider.value));
+        });
+    }
+    
+    // ===== MUSIC UPLOAD & PLAYLIST =====
+    const uploadMusicBtn = document.getElementById('uploadMusicBtn');
+    const musicUploadInput = document.getElementById('musicUpload');
+    const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
+    
+    if (uploadMusicBtn && musicUploadInput) {
+        uploadMusicBtn.addEventListener('click', () => {
+            musicUploadInput.click();
+        });
+        
+        musicUploadInput.addEventListener('change', handleMusicUpload);
+    }
+    
+    if (clearPlaylistBtn) {
+        clearPlaylistBtn.addEventListener('click', () => {
+            if (confirm('Clear all tracks from playlist?')) {
+                clearPlaylist();
+            }
+        });
+    }
+    
+    // ===== RADIO EQ CONTROLS =====
+    const eqBassSlider = document.getElementById('eqBass');
+    const eqMidBassSlider = document.getElementById('eqMidBass');
+    const eqMidSlider = document.getElementById('eqMid');
+    const eqMidTrebleSlider = document.getElementById('eqMidTreble');
+    const eqTrebleSlider = document.getElementById('eqTreble');
+    
+    const eqBassLabel = document.getElementById('eqBassLabel');
+    const eqMidBassLabel = document.getElementById('eqMidBassLabel');
+    const eqMidLabel = document.getElementById('eqMidLabel');
+    const eqMidTrebleLabel = document.getElementById('eqMidTrebleLabel');
+    const eqTrebleLabel = document.getElementById('eqTrebleLabel');
+    
+    if (eqBassSlider) {
+        eqBassSlider.addEventListener('input', () => {
+            const gain = parseFloat(eqBassSlider.value);
+            musicEQBass.gain.value = gain;
+            if (eqBassLabel) eqBassLabel.textContent = gain.toFixed(1) + ' dB';
+        });
+    }
+    
+    if (eqMidBassSlider) {
+        eqMidBassSlider.addEventListener('input', () => {
+            const gain = parseFloat(eqMidBassSlider.value);
+            musicEQMidBass.gain.value = gain;
+            if (eqMidBassLabel) eqMidBassLabel.textContent = gain.toFixed(1) + ' dB';
+        });
+    }
+    
+    if (eqMidSlider) {
+        eqMidSlider.addEventListener('input', () => {
+            const gain = parseFloat(eqMidSlider.value);
+            musicEQMid.gain.value = gain;
+            if (eqMidLabel) eqMidLabel.textContent = gain.toFixed(1) + ' dB';
+        });
+    }
+    
+    if (eqMidTrebleSlider) {
+        eqMidTrebleSlider.addEventListener('input', () => {
+            const gain = parseFloat(eqMidTrebleSlider.value);
+            musicEQMidTreble.gain.value = gain;
+            if (eqMidTrebleLabel) eqMidTrebleLabel.textContent = gain.toFixed(1) + ' dB';
+        });
+    }
+    
+    if (eqTrebleSlider) {
+        eqTrebleSlider.addEventListener('input', () => {
+            const gain = parseFloat(eqTrebleSlider.value);
+            musicEQTreble.gain.value = gain;
+            if (eqTrebleLabel) eqTrebleLabel.textContent = gain.toFixed(1) + ' dB';
+        });
+    }
+    
+    // Initialize EQ labels on page load
+    if (eqBassLabel) eqBassLabel.textContent = '0.0 dB';
+    if (eqMidBassLabel) eqMidBassLabel.textContent = '0.0 dB';
+    if (eqMidLabel) eqMidLabel.textContent = '0.0 dB';
+    if (eqMidTrebleLabel) eqMidTrebleLabel.textContent = '0.0 dB';
+    if (eqTrebleLabel) eqTrebleLabel.textContent = '0.0 dB';
+    
+    // ===== RADIO EQ PRESETS =====
+    const radioPresetBtns = document.querySelectorAll('.radio-preset-btn');
+    radioPresetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = btn.getAttribute('data-preset');
+            applyRadioEQPreset(preset);
+        });
+    });
     
     musicVolumeSlider.addEventListener('input', () => {
+        if (userMusicAudio) {
+            userMusicAudio.volume = parseFloat(musicVolumeSlider.value) / 100;
+        }
         if (defaultMusicAudio) {
             defaultMusicAudio.volume = parseFloat(musicVolumeSlider.value) / 100;
         }

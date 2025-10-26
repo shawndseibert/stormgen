@@ -68,14 +68,58 @@
                 <summary>Sounds</summary>
                 <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:4px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
             </details>
+            
             <details open>
                 <summary>Music</summary>
                 <div id="music-controls">
-                    <div id="music-controls-row">
-                        <button id="musicPlayBtn">Play</button>
-                        <button id="musicPauseBtn">Pause</button>
-                        <button id="musicStopBtn">Stop</button>
+                    <!-- Playlist Management -->
+                    <div id="playlist-section">
+                        <div id="playlist-upload">
+                            <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
+                            <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
+                            <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
+                        </div>
+                        <div id="playlist-container">
+                            <div id="playlist-items"></div>
+                        </div>
                     </div>
+                    
+                    <!-- Radio EQ Presets -->
+                    <div id="radio-eq-presets">
+                        <label>Radio Presets</label>
+                        <div class="radio-preset-buttons">
+                            <button class="radio-preset-btn" data-preset="modern">Modern</button>
+                            <button class="radio-preset-btn" data-preset="vintage">Vintage Radio</button>
+                            <button class="radio-preset-btn" data-preset="am">AM Radio</button>
+                            <button class="radio-preset-btn" data-preset="gramophone">Gramophone</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Radio EQ Controls -->
+                    <div id="radio-eq-controls">
+                        <label for="eqBass">Bass
+                            <input type="range" id="eqBass" min="-12" max="12" step="0.5" value="0">
+                            <span id="eqBassLabel">0 dB</span>
+                        </label>
+                        <label for="eqMidBass">Mid-Bass
+                            <input type="range" id="eqMidBass" min="-12" max="12" step="0.5" value="0">
+                            <span id="eqMidBassLabel">0 dB</span>
+                        </label>
+                        <label for="eqMid">Mid
+                            <input type="range" id="eqMid" min="-12" max="12" step="0.5" value="0">
+                            <span id="eqMidLabel">0 dB</span>
+                        </label>
+                        <label for="eqMidTreble">Mid-Treble
+                            <input type="range" id="eqMidTreble" min="-12" max="12" step="0.5" value="0">
+                            <span id="eqMidTrebleLabel">0 dB</span>
+                        </label>
+                        <label for="eqTreble">Treble
+                            <input type="range" id="eqTreble" min="-12" max="12" step="0.5" value="0">
+                            <span id="eqTrebleLabel">0 dB</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Existing Music Controls -->
                     <label for="musicVolume">Music Volume
                         <input type="range" id="musicVolume" min="0" max="100" value="100">
                     </label>
@@ -93,6 +137,28 @@
                     </label>
                 </div>
             </details>
+            
+            <!-- Music Playback Controls (below Music tab) -->
+            <div id="music-playback-section">
+                <div id="current-track-display">No track loaded</div>
+                
+                <!-- Playback Controls -->
+                <div id="music-controls-row">
+                    <button id="musicPlayPauseBtn">▶ Play</button>
+                    <button id="musicStopBtn">⏹ Stop</button>
+                    <button id="musicPrevBtn">⏮ Prev</button>
+                    <button id="musicNextBtn">⏭ Next</button>
+                </div>
+                
+                <!-- Track Position Slider -->
+                <div id="track-position-section">
+                    <input type="range" id="trackPosition" min="0" max="100" value="0" step="0.1">
+                    <div id="track-time">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+            </div>
 
         </div>
         <div class="button-row">

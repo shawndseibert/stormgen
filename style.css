@@ -77,6 +77,21 @@
 .thunder-options-frequency label {
     margin-bottom: 0;
 }
+
+/* Music Playback Section (outside collapsible panels) */
+#music-playback-section {
+    background: rgba(0, 20, 10, 0.9);
+    border: 2px solid #00ff41;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+#music-playback-section #current-track-display {
+    margin-bottom: 12px;
+}
+
 /* Music controls row styling */
 #music-controls {
     display: flex;
@@ -489,3 +504,337 @@ button:disabled {
     border-color: #00ff41;
     transform: scale(1.05);
 }
+
+/* ============================================
+   PLAYLIST & MUSIC UPLOAD STYLING
+   ============================================ */
+
+#playlist-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+#playlist-upload {
+    display: flex;
+    gap: 8px;
+}
+
+.upload-btn {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 0.95em;
+    font-weight: 600;
+    background: rgba(0, 255, 65, 0.2);
+    color: #00ff41;
+    border: 2px solid #00ff41;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    text-shadow: 0 0 5px #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.upload-btn:hover {
+    background: rgba(0, 255, 65, 0.3);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+}
+
+.clear-playlist-btn {
+    flex: 0.6;
+    padding: 10px 12px;
+    font-size: 0.9em;
+    font-weight: 600;
+    background: rgba(255, 50, 50, 0.15);
+    color: #ff6666;
+    border: 2px solid rgba(255, 50, 50, 0.5);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 8px rgba(255, 50, 50, 0.3);
+    text-shadow: 0 0 3px #ff6666;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.clear-playlist-btn:hover {
+    background: rgba(255, 50, 50, 0.3);
+    box-shadow: 0 0 15px rgba(255, 50, 50, 0.5);
+    border-color: #ff6666;
+}
+
+#current-track-display {
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    color: #00ff41;
+    font-size: 0.9em;
+    text-align: center;
+    text-shadow: 0 0 3px #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#playlist-container {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    padding: 4px;
+}
+
+#playlist-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#playlist-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+#playlist-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 65, 0.4);
+    border-radius: 4px;
+}
+
+#playlist-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 65, 0.6);
+}
+
+.playlist-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    margin: 2px 0;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 65, 0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.playlist-item:hover {
+    background: rgba(0, 255, 65, 0.1);
+    border-color: rgba(0, 255, 65, 0.5);
+}
+
+.playlist-item.active {
+    background: rgba(0, 255, 65, 0.2);
+    border-color: #00ff41;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.track-name {
+    flex: 1;
+    color: #00ff41;
+    font-size: 0.85em;
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
+}
+
+.track-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.track-btn {
+    padding: 4px 8px;
+    font-size: 0.8em;
+    background: rgba(0, 255, 65, 0.15);
+    color: #00ff41;
+    border: 1px solid rgba(0, 255, 65, 0.5);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.track-btn:hover {
+    background: rgba(0, 255, 65, 0.3);
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+}
+
+.track-btn.delete-btn {
+    background: rgba(255, 50, 50, 0.15);
+    color: #ff6666;
+    border-color: rgba(255, 50, 50, 0.5);
+}
+
+.track-btn.delete-btn:hover {
+    background: rgba(255, 50, 50, 0.3);
+    box-shadow: 0 0 8px rgba(255, 50, 50, 0.4);
+}
+
+/* ============================================
+   RADIO EQ STYLING
+   ============================================ */
+
+#radio-eq-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+#radio-eq-presets label {
+    margin: 0;
+    font-weight: 600;
+    color: #00ff41;
+    text-shadow: 0 0 5px #00ff41;
+    font-size: 0.95em;
+}
+
+.radio-preset-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+.radio-preset-btn {
+    padding: 8px 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+    background: rgba(0, 255, 65, 0.15);
+    color: #00ff41;
+    border: 2px solid rgba(0, 255, 65, 0.5);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
+    text-shadow: 0 0 3px #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+}
+
+.radio-preset-btn:hover {
+    background: rgba(0, 255, 65, 0.25);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+    border-color: #00ff41;
+}
+
+.radio-preset-btn:active {
+    background: rgba(0, 255, 65, 0.35);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4), inset 0 0 10px rgba(0, 255, 65, 0.2);
+}
+
+#radio-eq-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+#radio-eq-controls label {
+    display: grid;
+    grid-template-columns: 85px 1fr 65px;
+    align-items: center;
+    font-size: 0.85em;
+    margin: 0;
+    gap: 10px;
+}
+
+#radio-eq-controls input[type="range"] {
+    width: 100%;
+}
+
+#radio-eq-controls span {
+    text-align: right;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+/* Update music control buttons to fit 4 buttons */
+#music-controls-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) repeat(2, 0.8fr);
+    gap: 6px;
+}
+
+#music-controls-row button {
+    padding: 10px 4px;
+    font-size: 0.85em;
+}
+
+/* ============================================
+   TRACK POSITION SLIDER
+   ============================================ */
+
+#track-position-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+#trackPosition {
+    width: 100%;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    outline: none;
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    cursor: pointer;
+}
+
+#trackPosition::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #00ff41;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
+    transition: all 0.2s ease;
+}
+
+#trackPosition::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 1);
+}
+
+#trackPosition::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #00ff41;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
+    transition: all 0.2s ease;
+}
+
+#trackPosition::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 1);
+}
+
+#track-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    padding: 0 4px;
+}
+
+#currentTime, #totalTime {
+    text-shadow: 0 0 3px #00ff41;
+}
+
