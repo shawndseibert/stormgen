@@ -254,7 +254,7 @@ body::after {
     align-items: center;
     margin-bottom: 16px;
     justify-content: center;
-    padding: 16px 10px;
+    padding: 16px 70px 16px 10px;
     background: rgba(0, 40, 20, 0.6);
     border: 2px solid #00ff41;
     border-radius: 4px;
@@ -271,6 +271,7 @@ h1 {
     font-size: 1.5em;
     text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
     flex: 1;
+    padding-right: 10px;
 }
 
 /* Waveform Visualizer */
@@ -319,6 +320,13 @@ h1 {
     filter: grayscale(1) brightness(2) sepia(1) saturate(10) hue-rotate(50deg);
     text-shadow: 0 0 10px #00ff41;
     transition: all 0.2s ease;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
 .weather-icon.lightning {
