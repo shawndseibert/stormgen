@@ -11,6 +11,12 @@ const musicLowpassNode = audioCtx.createBiquadFilter();
 const musicReverbNode = audioCtx.createConvolver();
 const musicWetGain = audioCtx.createGain();
 const musicDryGain = audioCtx.createGain();
+const rainReverbNode = audioCtx.createConvolver();
+const rainWetGain = audioCtx.createGain();
+const rainDryGain = audioCtx.createGain();
+const thunderReverbNode = audioCtx.createConvolver();
+const thunderWetGain = audioCtx.createGain();
+const thunderDryGain = audioCtx.createGain();
 
 // Configure audio nodes with default values
 lowpassFilterNode.type = 'lowpass';
@@ -28,8 +34,18 @@ thunderGainNode.gain.value = 0.5;
 birdsGainNode.gain.value = 0;
 
 // Audio connections
-rainGainNode.connect(rainEQNode).connect(lowpassFilterNode).connect(audioCtx.destination);
-thunderGainNode.connect(lowpassFilterNode).connect(audioCtx.destination);
+rainGainNode.connect(rainEQNode);
+rainEQNode.connect(lowpassFilterNode);
+// Rain reverb routing: split to wet (reverb) and dry paths BEFORE the shared lowpass
+rainEQNode.connect(rainDryGain).connect(lowpassFilterNode);
+rainEQNode.connect(rainReverbNode).connect(rainWetGain).connect(lowpassFilterNode);
+// Final rain output goes through lowpass to destination
+lowpassFilterNode.connect(audioCtx.destination);
+
+// Thunder reverb routing: thunder has its own reverb chain, then goes through lowpass
+thunderGainNode.connect(thunderDryGain).connect(lowpassFilterNode);
+thunderGainNode.connect(thunderReverbNode).connect(thunderWetGain).connect(lowpassFilterNode);
+
 birdsGainNode.connect(lowpassFilterNode).connect(audioCtx.destination);
 
 // Sound paths
@@ -105,6 +121,8 @@ function applyPreset(presetName) {
     const musicLowpassSlider = document.getElementById('musicLowpass');
     const musicRoomSizeSlider = document.getElementById('musicRoomSize');
     const musicReverbSlider = document.getElementById('musicReverb');
+    const rainReverbSlider = document.getElementById('rainReverb');
+    const thunderReverbSlider = document.getElementById('thunderReverb');
     
     // Resume AudioContext if needed
     if (audioCtx.state === 'suspended') {
@@ -118,8 +136,10 @@ function applyPreset(presetName) {
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
         musicVolumeSlider.value = 40;
         musicLowpassSlider.value = 22050; // Max - no filtering on music
-        musicRoomSizeSlider.value = 0.05; // Very small room
+        musicRoomSizeSlider.value = 0.02; // Very small room
         musicReverbSlider.value = 0.60; // Higher reverb mix
+        rainReverbSlider.value = 0.50; // Rain reverb for indoor space
+        thunderReverbSlider.value = 0.60; // Thunder reverb for indoor space
         
         // Start music if not already playing
         if (!defaultMusicAudio || defaultMusicAudio.paused) {
@@ -133,8 +153,10 @@ function applyPreset(presetName) {
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
         musicVolumeSlider.value = 40;
         musicLowpassSlider.value = 22050; // Max - no filtering on music
-        musicRoomSizeSlider.value = 0.05; // Very small room
+        musicRoomSizeSlider.value = 0.02; // Very small room
         musicReverbSlider.value = 0.60; // Higher reverb mix
+        rainReverbSlider.value = 0.50; // Rain reverb for indoor space
+        thunderReverbSlider.value = 0.60; // Thunder reverb for indoor space
         
         // Do NOT auto-play music for Indoor preset
         
@@ -145,8 +167,10 @@ function applyPreset(presetName) {
         lowpassFilterSlider.value = 22050; // Max - no filtering
         musicVolumeSlider.value = 50; // Half volume
         musicLowpassSlider.value = 22050; // Max - no filtering
-        musicRoomSizeSlider.value = 0.05; // Small room
+        musicRoomSizeSlider.value = 0.02; // Small room
         musicReverbSlider.value = 0; // No reverb
+        rainReverbSlider.value = 0; // No rain reverb
+        thunderReverbSlider.value = 0; // No thunder reverb
         
         // Do NOT auto-play music for Outdoor preset
     }
@@ -159,6 +183,8 @@ function applyPreset(presetName) {
     musicLowpassSlider.dispatchEvent(new Event('input'));
     musicRoomSizeSlider.dispatchEvent(new Event('input'));
     musicReverbSlider.dispatchEvent(new Event('input'));
+    rainReverbSlider.dispatchEvent(new Event('input'));
+    thunderReverbSlider.dispatchEvent(new Event('input'));
     
     // Start storm if not already playing
     if (!isPlaying) {
@@ -567,10 +593,19 @@ window.addEventListener('DOMContentLoaded', () => {
     loadBirds();
     loadRainBuffer();
     
-    // Set up music reverb with corrected decay
-    musicReverbNode.buffer = createImpulseResponse(2, 2); // Default room size 1.0 * 2 = decay 2
+    // Set up reverb nodes with corrected decay (all use same room size)
+    const defaultRoomDecay = 2; // Default room size 1.0 * 2 = decay 2
+    musicReverbNode.buffer = createImpulseResponse(2, defaultRoomDecay);
+    rainReverbNode.buffer = createImpulseResponse(2, defaultRoomDecay);
+    thunderReverbNode.buffer = createImpulseResponse(2, defaultRoomDecay);
+    
+    // Set initial reverb mix gains
     musicWetGain.gain.value = 0.3;
     musicDryGain.gain.value = 0.7;
+    rainWetGain.gain.value = 0;
+    rainDryGain.gain.value = 1;
+    thunderWetGain.gain.value = 0;
+    thunderDryGain.gain.value = 1;
     
     // Initialize UI elements
     const stormToggleBtn = document.getElementById('stormToggleBtn');
@@ -585,6 +620,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const musicLowpassSlider = document.getElementById('musicLowpass');
     const musicRoomSizeSlider = document.getElementById('musicRoomSize');
     const musicReverbSlider = document.getElementById('musicReverb');
+    const rainReverbSlider = document.getElementById('rainReverb');
+    const thunderReverbSlider = document.getElementById('thunderReverb');
     
     // Apply Outdoor preset defaults
     rainVolumeSlider.value = 0.25;
@@ -592,8 +629,10 @@ window.addEventListener('DOMContentLoaded', () => {
     lowpassFilterSlider.value = 22050;
     musicVolumeSlider.value = 50;
     musicLowpassSlider.value = 22050;
-    musicRoomSizeSlider.value = 0.05;
+    musicRoomSizeSlider.value = 0.02;
     musicReverbSlider.value = 0;
+    rainReverbSlider.value = 0;
+    thunderReverbSlider.value = 0;
     
     // Set initial gain nodes from Outdoor preset values
     rainGainNode.gain.value = 0.25;
@@ -601,20 +640,28 @@ window.addEventListener('DOMContentLoaded', () => {
     lowpassFilterNode.frequency.value = 22050;
     musicLowpassNode.frequency.value = 22050;
     
-    // Update room size reverb
-    const roomDecay = 0.05 * 2;
+    // Update room size reverb for all reverb nodes
+    const roomDecay = 0.02 * 2;
     musicReverbNode.buffer = createImpulseResponse(2, roomDecay);
+    rainReverbNode.buffer = createImpulseResponse(2, roomDecay);
+    thunderReverbNode.buffer = createImpulseResponse(2, roomDecay);
     
     // Update reverb mix
     musicWetGain.gain.value = 0;
     musicDryGain.gain.value = 1;
+    rainWetGain.gain.value = 0;
+    rainDryGain.gain.value = 1;
+    thunderWetGain.gain.value = 0;
+    thunderDryGain.gain.value = 1;
     
     // Update all labels to match Outdoor preset
     document.getElementById('lowpassLabel').textContent = '22050 Hz';
     document.getElementById('musicLowpassLabel').textContent = '22050 Hz';
-    document.getElementById('musicRoomSizeLabel').textContent = '0.05';
+    document.getElementById('musicRoomSizeLabel').textContent = '0.02';
     document.getElementById('musicReverbLabel').textContent = '0.00';
-    document.getElementById('frequencyLabel').textContent = '15-60s';
+    document.getElementById('rainReverbLabel').textContent = '0.00';
+    document.getElementById('thunderReverbLabel').textContent = '0.00';
+    document.getElementById('frequencyLabel').textContent = '5-60s';
     
     // ===== RAIN VOLUME =====
     
@@ -717,6 +764,24 @@ window.addEventListener('DOMContentLoaded', () => {
         musicReverbLabel.textContent = mix.toFixed(2);
     });
     
+    const rainReverbLabel = document.getElementById('rainReverbLabel');
+    
+    rainReverbSlider.addEventListener('input', () => {
+        const mix = parseFloat(rainReverbSlider.value);
+        rainWetGain.gain.value = mix;
+        rainDryGain.gain.value = 1 - mix;
+        rainReverbLabel.textContent = mix.toFixed(2);
+    });
+    
+    const thunderReverbLabel = document.getElementById('thunderReverbLabel');
+    
+    thunderReverbSlider.addEventListener('input', () => {
+        const mix = parseFloat(thunderReverbSlider.value);
+        thunderWetGain.gain.value = mix;
+        thunderDryGain.gain.value = 1 - mix;
+        thunderReverbLabel.textContent = mix.toFixed(2);
+    });
+    
     const musicRoomSizeLabel = document.getElementById('musicRoomSizeLabel');
     
     musicRoomSizeSlider.addEventListener('input', () => {
@@ -728,7 +793,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // Formula: decay = sliderValue * 2 (ranges from 0.2 to 4.0)
         const decay = sliderValue * 2;
         
+        // Update all reverb nodes to use the same room size
         musicReverbNode.buffer = createImpulseResponse(2, decay);
+        rainReverbNode.buffer = createImpulseResponse(2, decay);
+        thunderReverbNode.buffer = createImpulseResponse(2, decay);
         musicRoomSizeLabel.textContent = sliderValue.toFixed(2);
     });
     

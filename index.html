@@ -24,6 +24,10 @@
                 <label>Rain Volume
                     <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0.25">
                 </label>
+                <label for="rainReverb">Rain Reverb Mix
+                    <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
+                    <span id="rainReverbLabel">0.00</span>
+                </label>
             </details>
             <details open>
                 <summary>Thunder Options</summary>
@@ -31,15 +35,19 @@
                     <label>Thunder Volume
                         <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="0.5">
                     </label>
+                    <label for="thunderReverb">Thunder Reverb Mix
+                        <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
+                        <span id="thunderReverbLabel">0.00</span>
+                    </label>
                     <div class="thunder-options-frequency">
                         <label>Thunder Frequency</label>
                         <label>Min Interval
-                            <input type="range" id="thunderMin" min="5" max="60" step="1" value="15">
+                            <input type="range" id="thunderMin" min="5" max="60" step="1" value="5">
                         </label>
                         <label>Max Interval
                             <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
                         </label>
-                        <span id="frequencyLabel">15-20s</span>
+                        <span id="frequencyLabel">5-60s</span>
                     </div>
                 </div>
             </details>
@@ -70,8 +78,8 @@
                         <span id="musicLowpassLabel">22050 Hz</span>
                     </label>
                     <label for="musicRoomSize">Room Size
-                        <input type="range" id="musicRoomSize" min="0.01" max="2" step="0.01" value="1">
-                        <span id="musicRoomSizeLabel">1.00</span>
+                        <input type="range" id="musicRoomSize" min="0.01" max="2" step="0.01" value="0.02">
+                        <span id="musicRoomSizeLabel">0.02</span>
                     </label>
                     <label for="musicReverb">Music Reverb Mix
                         <input type="range" id="musicReverb" min="0" max="1" step="0.01" value="0.3">
