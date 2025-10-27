@@ -125,6 +125,12 @@ let hasStartedStormBefore = false; // Track if storm has been manually started b
 let userPlaylist = []; // Array of {name, url, blob}
 let currentTrackIndex = -1;
 let userMusicAudio = null;
+let userMusicGain = null; // Gain node for current track
+let nextMusicAudio = null; // For crossfade
+let nextMusicGain = null; // Gain node for next track
+let crossfadeDuration = 25; // seconds (default)
+let isCrossfading = false;
+let crossfadeCheckInterval = null;
 let db = null; // IndexedDB database
 
 // Weather icon element
@@ -853,7 +859,10 @@ function updateCurrentTrackDisplay() {
     const display = document.getElementById('current-track-display');
     if (!display) return;
     
-    if (currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
+    if (isCrossfading && currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
+        const nextIndex = (currentTrackIndex + 1) % userPlaylist.length;
+        display.textContent = `🎵 ${userPlaylist[currentTrackIndex].name} ⟶ ${userPlaylist[nextIndex].name}`;
+    } else if (currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
         display.textContent = `🎵 ${userPlaylist[currentTrackIndex].name}`;
     } else if (defaultMusicAudio && !defaultMusicAudio.paused) {
         display.textContent = '🎵 Default Music';
@@ -876,26 +885,32 @@ function playUserMusic() {
     
     if (!userMusicAudio) {
         userMusicAudio = new Audio();
+        userMusicGain = audioCtx.createGain();
         
         const musicSource = audioCtx.createMediaElementSource(userMusicAudio);
         
-        // Connect to the start of the EQ chain (the chain itself is already connected during init)
-        musicSource.connect(musicEQBass);
+        // Connect through gain node for crossfade control, then to EQ chain
+        musicSource.connect(userMusicGain);
+        userMusicGain.connect(musicEQBass);
         
         // Set initial volume
         const musicVolumeSlider = document.getElementById('musicVolume');
-        if (musicVolumeSlider) {
-            userMusicAudio.volume = parseFloat(musicVolumeSlider.value) / 100;
-        }
+        const targetVolume = musicVolumeSlider ? parseFloat(musicVolumeSlider.value) / 100 : 1;
+        userMusicGain.gain.value = targetVolume;
         
         // Auto-advance to next track when current ends
         userMusicAudio.addEventListener('ended', () => {
-            playNextTrack();
+            if (!isCrossfading) {
+                playNextTrack();
+            }
         });
         
         // Update track position as song plays
         userMusicAudio.addEventListener('timeupdate', updateTrackPosition);
         userMusicAudio.addEventListener('loadedmetadata', updateTrackDuration);
+        
+        // Monitor for crossfade timing
+        userMusicAudio.addEventListener('timeupdate', checkCrossfadeTime);
     }
     
     // If audio is paused, just resume; otherwise load new track
@@ -907,6 +922,13 @@ function playUserMusic() {
     } else {
         // Load and play new track
         userMusicAudio.src = track.url;
+        
+        // Force metadata load and update duration when ready
+        userMusicAudio.addEventListener('loadedmetadata', function updateDurationOnce() {
+            updateTrackDuration();
+            userMusicAudio.removeEventListener('loadedmetadata', updateDurationOnce);
+        });
+        
         userMusicAudio.play().catch(err => {
             console.error('Music playback failed:', err);
         });
@@ -935,9 +957,128 @@ function stopUserMusic() {
         userMusicAudio.currentTime = 0;
     }
     
+    // Stop any crossfading track
+    if (nextMusicAudio) {
+        nextMusicAudio.pause();
+        nextMusicAudio = null;
+    }
+    isCrossfading = false;
+    
     // Update button text
     const playPauseBtn = document.getElementById('musicPlayPauseBtn');
     if (playPauseBtn) playPauseBtn.textContent = '▶ Play';
+}
+
+// ==================== CROSSFADE FUNCTIONS ====================
+function checkCrossfadeTime() {
+    if (!userMusicAudio || isCrossfading || crossfadeDuration === 0) return;
+    if (!userMusicAudio.duration || isNaN(userMusicAudio.duration)) return;
+    
+    const timeRemaining = userMusicAudio.duration - userMusicAudio.currentTime;
+    
+    // Start crossfade when remaining time equals crossfade duration
+    if (timeRemaining <= crossfadeDuration && timeRemaining > 0) {
+        startCrossfade();
+    }
+}
+
+function startCrossfade() {
+    if (isCrossfading || userPlaylist.length <= 1 || crossfadeDuration === 0) return;
+    
+    isCrossfading = true;
+    
+    // Determine next track index
+    let nextIndex = currentTrackIndex + 1;
+    if (nextIndex >= userPlaylist.length) {
+        nextIndex = 0; // Loop to beginning
+    }
+    
+    const nextTrack = userPlaylist[nextIndex];
+    if (!nextTrack.url) {
+        isCrossfading = false;
+        return;
+    }
+    
+    // Create and set up next audio element with its own gain node
+    nextMusicAudio = new Audio();
+    nextMusicAudio.src = nextTrack.url;
+    nextMusicGain = audioCtx.createGain();
+    nextMusicGain.gain.value = 0; // Start silent
+    
+    const nextMusicSource = audioCtx.createMediaElementSource(nextMusicAudio);
+    nextMusicSource.connect(nextMusicGain);
+    nextMusicGain.connect(musicEQBass);
+    
+    // Start playing the next track (silently)
+    nextMusicAudio.play().catch(err => {
+        console.error('Next track playback failed:', err);
+        isCrossfading = false;
+    });
+    
+    // Update display to show crossfade
+    updateCurrentTrackDisplay();
+    
+    // Get target volume from slider
+    const musicVolumeSlider = document.getElementById('musicVolume');
+    const targetVolume = musicVolumeSlider ? parseFloat(musicVolumeSlider.value) / 100 : 1;
+    
+    // Perform the crossfade
+    const fadeInterval = setInterval(() => {
+        if (!userMusicAudio || !nextMusicAudio) {
+            clearInterval(fadeInterval);
+            return;
+        }
+        
+        const timeRemaining = userMusicAudio.duration - userMusicAudio.currentTime;
+        const fadeProgress = 1 - (timeRemaining / crossfadeDuration);
+        
+        if (fadeProgress >= 1 || timeRemaining <= 0) {
+            // Crossfade complete
+            clearInterval(fadeInterval);
+            completeCrossfade(nextIndex);
+        } else {
+            // Fade out current, fade in next using gain nodes
+            userMusicGain.gain.value = targetVolume * (1 - fadeProgress);
+            nextMusicGain.gain.value = targetVolume * fadeProgress;
+        }
+    }, 50);
+}
+
+function completeCrossfade(nextIndex) {
+    // Stop and disconnect old audio
+    if (userMusicAudio) {
+        userMusicAudio.pause();
+        userMusicAudio.currentTime = 0;
+    }
+    
+    // Swap audio elements and gain nodes
+    userMusicAudio = nextMusicAudio;
+    userMusicGain = nextMusicGain;
+    nextMusicAudio = null;
+    nextMusicGain = null;
+    
+    // Update track index and UI
+    currentTrackIndex = nextIndex;
+    updateCurrentTrackDisplay();
+    renderPlaylist();
+    
+    // Update track duration immediately (metadata is already loaded)
+    if (userMusicAudio.duration && !isNaN(userMusicAudio.duration)) {
+        updateTrackDuration();
+    }
+    
+    // Reset crossfade state
+    isCrossfading = false;
+    
+    // Set up event listeners for the new current track
+    userMusicAudio.addEventListener('timeupdate', updateTrackPosition);
+    userMusicAudio.addEventListener('loadedmetadata', updateTrackDuration);
+    userMusicAudio.addEventListener('timeupdate', checkCrossfadeTime);
+    userMusicAudio.addEventListener('ended', () => {
+        if (!isCrossfading) {
+            playNextTrack();
+        }
+    });
 }
 
 // ==================== TRACK POSITION FUNCTIONS ====================
@@ -1391,6 +1532,29 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
+    // ===== CROSSFADE CONTROL =====
+    const crossfadeDurationSlider = document.getElementById('crossfadeDuration');
+    const crossfadeDurationLabel = document.getElementById('crossfadeDurationLabel');
+    
+    // Load saved crossfade duration from localStorage
+    const savedCrossfade = localStorage.getItem('crossfadeDuration');
+    if (savedCrossfade !== null) {
+        crossfadeDuration = parseFloat(savedCrossfade);
+        if (crossfadeDurationSlider) crossfadeDurationSlider.value = crossfadeDuration;
+        if (crossfadeDurationLabel) crossfadeDurationLabel.textContent = crossfadeDuration.toFixed(1) + 's';
+    }
+    
+    if (crossfadeDurationSlider) {
+        crossfadeDurationSlider.addEventListener('input', () => {
+            crossfadeDuration = parseFloat(crossfadeDurationSlider.value);
+            if (crossfadeDurationLabel) {
+                crossfadeDurationLabel.textContent = crossfadeDuration.toFixed(1) + 's';
+            }
+            // Save to localStorage
+            localStorage.setItem('crossfadeDuration', crossfadeDuration);
+        });
+    }
+    
     // ===== RADIO EQ CONTROLS =====
     const eqBassSlider = document.getElementById('eqBass');
     const eqMidBassSlider = document.getElementById('eqMidBass');
@@ -1461,11 +1625,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
     
     musicVolumeSlider.addEventListener('input', () => {
-        if (userMusicAudio) {
-            userMusicAudio.volume = parseFloat(musicVolumeSlider.value) / 100;
+        const volume = parseFloat(musicVolumeSlider.value) / 100;
+        
+        // Update user music gain node if it exists
+        if (userMusicGain) {
+            userMusicGain.gain.value = volume;
         }
+        // Update next track gain if crossfading (maintain relative fade level)
+        if (nextMusicGain && isCrossfading) {
+            // Don't update during crossfade - let the fade handle it
+        }
+        // Update default music volume
         if (defaultMusicAudio) {
-            defaultMusicAudio.volume = parseFloat(musicVolumeSlider.value) / 100;
+            defaultMusicAudio.volume = volume;
         }
     });
     
