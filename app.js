@@ -739,6 +739,17 @@ function moveTrack(index, direction) {
     }
     
     renderPlaylist();
+    
+    // Add animation to the moved track
+    setTimeout(() => {
+        const playlistItems = document.querySelectorAll('.playlist-item');
+        if (playlistItems[newIndex]) {
+            playlistItems[newIndex].classList.add('reordered');
+            setTimeout(() => {
+                playlistItems[newIndex].classList.remove('reordered');
+            }, 400);
+        }
+    }, 10);
 }
 
 // Delete track from playlist
@@ -824,6 +835,15 @@ function loadTrack(index) {
         playUserMusic();
     }
     
+    // Add flash animation
+    const currentDisplay = document.getElementById('current-track-display');
+    if (currentDisplay) {
+        currentDisplay.classList.add('track-changed');
+        setTimeout(() => {
+            currentDisplay.classList.remove('track-changed');
+        }, 600);
+    }
+    
     updateCurrentTrackDisplay();
     renderPlaylist();
 }
@@ -856,18 +876,49 @@ function playNextTrack() {
 
 // Update current track display
 function updateCurrentTrackDisplay() {
-    const display = document.getElementById('current-track-display');
-    if (!display) return;
+    const currentDisplay = document.getElementById('current-track-display');
+    const nextDisplay = document.getElementById('next-track-display');
+    if (!currentDisplay) return;
+    
+    const currentTrackName = currentDisplay.querySelector('.track-name');
+    const nextTrackName = nextDisplay ? nextDisplay.querySelector('.track-name') : null;
     
     if (isCrossfading && currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
+        // Show both current and next track during crossfade
         const nextIndex = (currentTrackIndex + 1) % userPlaylist.length;
-        display.textContent = `🎵 ${userPlaylist[currentTrackIndex].name} ⟶ ${userPlaylist[nextIndex].name}`;
+        if (currentTrackName) {
+            currentTrackName.textContent = userPlaylist[currentTrackIndex].name;
+        }
+        if (nextDisplay && nextTrackName) {
+            nextTrackName.textContent = userPlaylist[nextIndex].name;
+            nextDisplay.style.display = 'block';
+            nextDisplay.classList.add('crossfade-active');
+        }
     } else if (currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
-        display.textContent = `🎵 ${userPlaylist[currentTrackIndex].name}`;
+        // Show only current track
+        if (currentTrackName) {
+            currentTrackName.textContent = userPlaylist[currentTrackIndex].name;
+        }
+        if (nextDisplay) {
+            nextDisplay.style.display = 'none';
+            nextDisplay.classList.remove('crossfade-active');
+        }
     } else if (defaultMusicAudio && !defaultMusicAudio.paused) {
-        display.textContent = '🎵 Default Music';
+        if (currentTrackName) {
+            currentTrackName.textContent = 'Default Music';
+        }
+        if (nextDisplay) {
+            nextDisplay.style.display = 'none';
+            nextDisplay.classList.remove('crossfade-active');
+        }
     } else {
-        display.textContent = 'No track loaded';
+        if (currentTrackName) {
+            currentTrackName.textContent = 'No track loaded';
+        }
+        if (nextDisplay) {
+            nextDisplay.style.display = 'none';
+            nextDisplay.classList.remove('crossfade-active');
+        }
     }
 }
 
@@ -975,6 +1026,17 @@ function checkCrossfadeTime() {
     if (!userMusicAudio.duration || isNaN(userMusicAudio.duration)) return;
     
     const timeRemaining = userMusicAudio.duration - userMusicAudio.currentTime;
+    const nextDisplay = document.getElementById('next-track-display');
+    const nextTrackName = nextDisplay ? nextDisplay.querySelector('.track-name') : null;
+    
+    // Show next track preview 5 seconds before crossfade starts
+    if (timeRemaining <= (crossfadeDuration + 5) && timeRemaining > crossfadeDuration && nextDisplay && nextTrackName) {
+        const nextIndex = (currentTrackIndex + 1) % userPlaylist.length;
+        if (userPlaylist.length > 1) {
+            nextTrackName.textContent = userPlaylist[nextIndex].name;
+            nextDisplay.style.display = 'block';
+        }
+    }
     
     // Start crossfade when remaining time equals crossfade duration
     if (timeRemaining <= crossfadeDuration && timeRemaining > 0) {
@@ -1059,6 +1121,16 @@ function completeCrossfade(nextIndex) {
     
     // Update track index and UI
     currentTrackIndex = nextIndex;
+    
+    // Add flash animation to current track display
+    const currentDisplay = document.getElementById('current-track-display');
+    if (currentDisplay) {
+        currentDisplay.classList.add('track-changed');
+        setTimeout(() => {
+            currentDisplay.classList.remove('track-changed');
+        }, 600);
+    }
+    
     updateCurrentTrackDisplay();
     renderPlaylist();
     
@@ -1639,7 +1711,31 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (defaultMusicAudio) {
             defaultMusicAudio.volume = volume;
         }
+        
+        // Sync with playback volume slider
+        const playbackVolumeSlider = document.getElementById('playbackMusicVolume');
+        const playbackVolumeLabel = document.getElementById('playbackMusicVolumeLabel');
+        if (playbackVolumeSlider && playbackVolumeSlider.value !== musicVolumeSlider.value) {
+            playbackVolumeSlider.value = musicVolumeSlider.value;
+            if (playbackVolumeLabel) {
+                playbackVolumeLabel.textContent = musicVolumeSlider.value;
+            }
+        }
     });
+    
+    // Sync playback volume slider with main music volume slider
+    const playbackVolumeSlider = document.getElementById('playbackMusicVolume');
+    const playbackVolumeLabel = document.getElementById('playbackMusicVolumeLabel');
+    if (playbackVolumeSlider) {
+        playbackVolumeSlider.addEventListener('input', () => {
+            const value = playbackVolumeSlider.value;
+            musicVolumeSlider.value = value;
+            musicVolumeSlider.dispatchEvent(new Event('input'));
+            if (playbackVolumeLabel) {
+                playbackVolumeLabel.textContent = value;
+            }
+        });
+    }
     
     const musicLowpassLabel = document.getElementById('musicLowpassLabel');
     
@@ -1691,7 +1787,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         musicReverbNode.buffer = createImpulseResponse(2, decay);
         rainReverbNode.buffer = createImpulseResponse(2, decay);
         thunderReverbNode.buffer = createImpulseResponse(2, decay);
-        thunderReverbLabel.textContent = mix.toFixed(2);
+        musicRoomSizeLabel.textContent = sliderValue.toFixed(2);
     });
     
     const stormIcon = weatherIcon; // Use weather icon for click interaction
@@ -1717,7 +1813,31 @@ window.addEventListener('DOMContentLoaded', async () => {
         
         panel.addEventListener('toggle', () => {
             localStorage.setItem(key, panel.open ? 'open' : 'closed');
+            
+            // Make waveform sticky when OSC panel is opened
+            const waveformContainer = document.getElementById('waveform-container');
+            const summary = panel.querySelector('summary');
+            if (summary && summary.textContent.includes('OSC') && waveformContainer) {
+                if (panel.open) {
+                    waveformContainer.style.position = 'sticky';
+                    waveformContainer.style.top = '0';
+                    waveformContainer.style.zIndex = '100';
+                } else {
+                    waveformContainer.style.position = 'relative';
+                    waveformContainer.style.top = 'auto';
+                    waveformContainer.style.zIndex = 'auto';
+                }
+            }
         });
+        
+        // Initialize sticky state on page load if OSC panel is open
+        const waveformContainer = document.getElementById('waveform-container');
+        const summary = panel.querySelector('summary');
+        if (summary && summary.textContent.includes('OSC') && waveformContainer && panel.open) {
+            waveformContainer.style.position = 'sticky';
+            waveformContainer.style.top = '0';
+            waveformContainer.style.zIndex = '100';
+        }
     });
     
     // ===== OSC CONTROLS =====
