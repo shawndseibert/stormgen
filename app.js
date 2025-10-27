@@ -84,6 +84,15 @@ thunderGainNode.connect(thunderReverbNode).connect(thunderWetGain).connect(lowpa
 
 birdsGainNode.connect(lowpassFilterNode);
 
+// Music EQ chain connections (shared by both default and user music)
+musicEQBass.connect(musicEQMidBass);
+musicEQMidBass.connect(musicEQMid);
+musicEQMid.connect(musicEQMidTreble);
+musicEQMidTreble.connect(musicEQTreble);
+musicEQTreble.connect(musicLowpassNode);
+musicLowpassNode.connect(musicDryGain).connect(analyser);
+musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(analyser);
+
 // Sound paths
 const RAIN_SOUND = 'sounds/rain/rain-sound-188158.mp3';
 const BIRDS_SOUND = 'sounds/birds/birds-19624.mp3';
@@ -536,9 +545,9 @@ function playDefaultMusic() {
         defaultMusicAudio.loop = true;
         
         const musicSource = audioCtx.createMediaElementSource(defaultMusicAudio);
-        musicSource.connect(musicLowpassNode);
-        musicLowpassNode.connect(musicDryGain).connect(analyser);
-        musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(analyser);
+        
+        // Connect to the start of the EQ chain (the chain itself is already connected during init)
+        musicSource.connect(musicEQBass);
         
         // Set initial volume from slider
         const musicVolumeSlider = document.getElementById('musicVolume');
@@ -597,7 +606,14 @@ async function loadPlaylistFromStorage() {
             blob: track.blob
         }));
         renderPlaylist();
-        updateCurrentTrackDisplay();
+        
+        // Auto-load first track if playlist has songs
+        if (userPlaylist.length > 0) {
+            currentTrackIndex = 0;
+            updateCurrentTrackDisplay();
+        } else {
+            updateCurrentTrackDisplay();
+        }
     } catch (e) {
         console.error('Failed to load playlist:', e);
     }
@@ -784,11 +800,21 @@ function loadTrack(index) {
     if (index < 0 || index >= userPlaylist.length) return;
     
     const wasPlaying = userMusicAudio && !userMusicAudio.paused;
+    const isDefaultPlaying = defaultMusicAudio && !defaultMusicAudio.paused;
     
+    // Stop both default and user music
+    if (isDefaultPlaying) {
+        stopDefaultMusic();
+    }
     stopUserMusic();
+    
     currentTrackIndex = index;
     
-    if (wasPlaying) {
+    // Start playing if any music was playing, or just load and play the clicked track
+    if (wasPlaying || isDefaultPlaying) {
+        playUserMusic();
+    } else {
+        // User clicked a track when nothing was playing - start playing it
         playUserMusic();
     }
     
@@ -853,15 +879,8 @@ function playUserMusic() {
         
         const musicSource = audioCtx.createMediaElementSource(userMusicAudio);
         
-        // Connect through EQ chain: source -> EQ bands -> lowpass -> reverb -> analyzer
+        // Connect to the start of the EQ chain (the chain itself is already connected during init)
         musicSource.connect(musicEQBass);
-        musicEQBass.connect(musicEQMidBass);
-        musicEQMidBass.connect(musicEQMid);
-        musicEQMid.connect(musicEQMidTreble);
-        musicEQMidTreble.connect(musicEQTreble);
-        musicEQTreble.connect(musicLowpassNode);
-        musicLowpassNode.connect(musicDryGain).connect(analyser);
-        musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(analyser);
         
         // Set initial volume
         const musicVolumeSlider = document.getElementById('musicVolume');
@@ -1528,15 +1547,158 @@ window.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem(key, panel.open ? 'open' : 'closed');
         });
     });
+    
+    // ===== OSC CONTROLS =====
+    
+    // Display mode buttons
+    const oscModeButtons = document.querySelectorAll('.osc-mode-btn');
+    oscModeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            oscModeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            oscSettings.mode = btn.dataset.mode;
+        });
+    });
+    
+    // Line width
+    const oscLineWidthSlider = document.getElementById('oscLineWidth');
+    const oscLineWidthLabel = document.getElementById('oscLineWidthLabel');
+    if (oscLineWidthSlider) {
+        oscLineWidthSlider.addEventListener('input', () => {
+            oscSettings.lineWidth = parseFloat(oscLineWidthSlider.value);
+            oscLineWidthLabel.textContent = oscLineWidthSlider.value;
+        });
+    }
+    
+    // Glow intensity
+    const oscGlowSlider = document.getElementById('oscGlowIntensity');
+    const oscGlowLabel = document.getElementById('oscGlowIntensityLabel');
+    if (oscGlowSlider) {
+        oscGlowSlider.addEventListener('input', () => {
+            oscSettings.glowIntensity = parseFloat(oscGlowSlider.value);
+            oscGlowLabel.textContent = oscGlowSlider.value;
+        });
+    }
+    
+    // Amplification
+    const oscAmpSlider = document.getElementById('oscAmplification');
+    const oscAmpLabel = document.getElementById('oscAmplificationLabel');
+    if (oscAmpSlider) {
+        oscAmpSlider.addEventListener('input', () => {
+            oscSettings.amplification = parseFloat(oscAmpSlider.value);
+            oscAmpLabel.textContent = oscAmpSlider.value + 'x';
+        });
+    }
+    
+    // Smoothing
+    const oscSmoothingSlider = document.getElementById('oscSmoothing');
+    const oscSmoothingLabel = document.getElementById('oscSmoothingLabel');
+    if (oscSmoothingSlider) {
+        oscSmoothingSlider.addEventListener('input', () => {
+            const value = parseFloat(oscSmoothingSlider.value);
+            oscSettings.smoothing = value;
+            analyser.smoothingTimeConstant = value;
+            oscSmoothingLabel.textContent = value.toFixed(2);
+        });
+    }
+    
+    // FFT Size
+    const oscFFTSlider = document.getElementById('oscFFTSize');
+    const oscFFTLabel = document.getElementById('oscFFTSizeLabel');
+    if (oscFFTSlider) {
+        oscFFTSlider.addEventListener('input', () => {
+            const power = parseInt(oscFFTSlider.value);
+            const size = Math.pow(2, power);
+            oscSettings.fftSize = size;
+            analyser.fftSize = size;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            oscFFTLabel.textContent = size.toString();
+        });
+    }
+    
+    // Color picker
+    const oscColorPicker = document.getElementById('oscColor');
+    if (oscColorPicker) {
+        oscColorPicker.addEventListener('input', () => {
+            oscSettings.color = oscColorPicker.value;
+        });
+    }
+    
+    // Background color
+    const oscBgColorPicker = document.getElementById('oscBgColor');
+    if (oscBgColorPicker) {
+        oscBgColorPicker.addEventListener('input', () => {
+            oscSettings.bgColor = oscBgColorPicker.value;
+        });
+    }
+    
+    // Fade trail
+    const oscFadeTrailSlider = document.getElementById('oscFadeTrail');
+    const oscFadeTrailLabel = document.getElementById('oscFadeTrailLabel');
+    if (oscFadeTrailSlider) {
+        oscFadeTrailSlider.addEventListener('input', () => {
+            const value = parseFloat(oscFadeTrailSlider.value);
+            oscSettings.fadeTrail = value;
+            oscFadeTrailLabel.textContent = value === 0 ? 'Off' : value.toFixed(2);
+        });
+    }
+    
+    // Mirror checkbox
+    const oscMirrorCheckbox = document.getElementById('oscMirror');
+    if (oscMirrorCheckbox) {
+        oscMirrorCheckbox.addEventListener('change', () => {
+            oscSettings.mirror = oscMirrorCheckbox.checked;
+        });
+    }
+    
+    // Fill checkbox
+    const oscFillCheckbox = document.getElementById('oscFill');
+    if (oscFillCheckbox) {
+        oscFillCheckbox.addEventListener('change', () => {
+            oscSettings.fill = oscFillCheckbox.checked;
+        });
+    }
+    
+    // Dots checkbox
+    const oscDotsCheckbox = document.getElementById('oscDots');
+    if (oscDotsCheckbox) {
+        oscDotsCheckbox.addEventListener('change', () => {
+            oscSettings.dots = oscDotsCheckbox.checked;
+        });
+    }
+    
+    // Rainbow checkbox
+    const oscRainbowCheckbox = document.getElementById('oscRainbow');
+    if (oscRainbowCheckbox) {
+        oscRainbowCheckbox.addEventListener('change', () => {
+            oscSettings.rainbow = oscRainbowCheckbox.checked;
+        });
+    }
 });
 
 // ==================== WAVEFORM VISUALIZER ====================
 const canvas = document.getElementById('waveform');
 const canvasCtx = canvas.getContext('2d');
 
+// Oscilloscope settings (defaults)
+let oscSettings = {
+    mode: 'waveform', // 'waveform', 'bars', 'circular'
+    lineWidth: 2,
+    glowIntensity: 10,
+    amplification: 1,
+    smoothing: 0.8,
+    fftSize: 2048,
+    color: '#00ff41',
+    bgColor: '#000a05',
+    fadeTrail: 0,
+    mirror: false,
+    fill: false,
+    dots: false,
+    rainbow: false
+};
+
 // Use the analyzer already created at the top
-const bufferLength = analyser.frequencyBinCount;
-const dataArray = new Uint8Array(bufferLength);
+let dataArray = new Uint8Array(analyser.frequencyBinCount);
 
 function resizeCanvas() {
     canvas.width = canvas.offsetWidth;
@@ -1551,12 +1713,32 @@ function drawWaveform() {
     
     analyser.getByteTimeDomainData(dataArray);
     
-    canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    // Background with optional fade trail effect
+    if (oscSettings.fadeTrail > 0) {
+        canvasCtx.fillStyle = `rgba(0, 10, 5, ${1 - oscSettings.fadeTrail})`;
+    } else {
+        const bgColor = hexToRgb(oscSettings.bgColor);
+        canvasCtx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
+    }
     canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
     
+    // Draw based on selected mode
+    if (oscSettings.mode === 'waveform') {
+        drawWaveformMode();
+    } else if (oscSettings.mode === 'bars') {
+        drawBarsMode();
+    } else if (oscSettings.mode === 'circular') {
+        drawCircularMode();
+    }
+}
+
+function drawWaveformMode() {
+    const bufferLength = dataArray.length;
+    
     // Draw grid lines
-    canvasCtx.strokeStyle = 'rgba(0, 255, 65, 0.1)';
+    canvasCtx.strokeStyle = `${oscSettings.color}33`; // 20% opacity
     canvasCtx.lineWidth = 1;
+    canvasCtx.shadowBlur = 0;
     
     // Horizontal center line
     canvasCtx.beginPath();
@@ -1565,37 +1747,205 @@ function drawWaveform() {
     canvasCtx.stroke();
     
     // Waveform
-    canvasCtx.lineWidth = 2;
-    canvasCtx.strokeStyle = '#00ff41';
-    canvasCtx.shadowBlur = 10;
-    canvasCtx.shadowColor = '#00ff41';
+    canvasCtx.lineWidth = oscSettings.lineWidth;
+    canvasCtx.shadowBlur = oscSettings.glowIntensity;
+    canvasCtx.shadowColor = oscSettings.color;
+    
+    // Optional fill
+    if (oscSettings.fill) {
+        const gradient = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
+        const color = hexToRgb(oscSettings.color);
+        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`);
+        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, 0.1)`);
+        gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0.3)`);
+        canvasCtx.fillStyle = gradient;
+    }
     
     canvasCtx.beginPath();
     
     const sliceWidth = canvas.width / bufferLength;
     let x = 0;
     
-    // Amplify the waveform by 3x for more dramatic visualization
-    const amplification = 3;
+    const points = [];
     
     for (let i = 0; i < bufferLength; i++) {
         const v = dataArray[i] / 128.0;
-        const y = ((v - 1) * amplification + 1) * canvas.height / 2;
-        
-        if (i === 0) {
-            canvasCtx.moveTo(x, y);
-        } else {
-            canvasCtx.lineTo(x, y);
-        }
-        
+        const y = ((v - 1) * oscSettings.amplification + 1) * canvas.height / 2;
+        points.push({x, y});
         x += sliceWidth;
     }
     
-    canvasCtx.lineTo(canvas.width, canvas.height / 2);
-    canvasCtx.stroke();
+    // Draw main waveform
+    drawPoints(points, oscSettings.color);
     
-    canvasCtx.shadowBlur = 0;
+    // Mirror effect
+    if (oscSettings.mirror) {
+        const mirroredPoints = points.map(p => ({
+            x: p.x,
+            y: canvas.height - p.y
+        }));
+        drawPoints(mirroredPoints, oscSettings.color);
+    }
+}
+
+function drawPoints(points, baseColor) {
+    canvasCtx.beginPath();
+    
+    for (let i = 0; i < points.length; i++) {
+        const point = points[i];
+        
+        // Rainbow mode
+        if (oscSettings.rainbow) {
+            const hue = (i / points.length) * 360;
+            canvasCtx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+            canvasCtx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+        } else {
+            canvasCtx.strokeStyle = baseColor;
+        }
+        
+        if (oscSettings.dots) {
+            // Dots mode
+            canvasCtx.fillStyle = oscSettings.rainbow ? `hsl(${(i / points.length) * 360}, 100%, 50%)` : baseColor;
+            canvasCtx.beginPath();
+            canvasCtx.arc(point.x, point.y, oscSettings.lineWidth / 2, 0, Math.PI * 2);
+            canvasCtx.fill();
+        } else {
+            // Line mode
+            if (i === 0) {
+                canvasCtx.moveTo(point.x, point.y);
+            } else {
+                canvasCtx.lineTo(point.x, point.y);
+            }
+        }
+    }
+    
+    if (!oscSettings.dots) {
+        canvasCtx.lineTo(canvas.width, canvas.height / 2);
+        canvasCtx.stroke();
+        
+        // Fill under wave
+        if (oscSettings.fill) {
+            canvasCtx.lineTo(canvas.width, canvas.height / 2);
+            canvasCtx.lineTo(0, canvas.height / 2);
+            canvasCtx.closePath();
+            canvasCtx.fill();
+        }
+    }
+}
+
+function drawBarsMode() {
+    const bufferLength = dataArray.length;
+    const barWidth = canvas.width / bufferLength;
+    
+    canvasCtx.shadowBlur = oscSettings.glowIntensity;
+    
+    for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255.0) * canvas.height * oscSettings.amplification;
+        const x = i * barWidth;
+        const y = canvas.height / 2 - barHeight / 2;
+        
+        if (oscSettings.rainbow) {
+            const hue = (i / bufferLength) * 360;
+            canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            canvasCtx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+        } else {
+            canvasCtx.fillStyle = oscSettings.color;
+            canvasCtx.shadowColor = oscSettings.color;
+        }
+        
+        canvasCtx.fillRect(x, y, barWidth - 1, barHeight);
+        
+        // Mirror effect
+        if (oscSettings.mirror) {
+            canvasCtx.fillRect(x, canvas.height / 2 + barHeight / 2, barWidth - 1, barHeight);
+        }
+    }
+}
+
+function drawCircularMode() {
+    const bufferLength = dataArray.length;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(canvas.width, canvas.height) * 0.3;
+    
+    canvasCtx.lineWidth = oscSettings.lineWidth;
+    canvasCtx.shadowBlur = oscSettings.glowIntensity;
+    canvasCtx.shadowColor = oscSettings.color;
+    
+    canvasCtx.beginPath();
+    
+    for (let i = 0; i < bufferLength; i++) {
+        const angle = (i / bufferLength) * Math.PI * 2;
+        const amplitude = (dataArray[i] / 255.0) * oscSettings.amplification;
+        const r = radius + amplitude * 100;
+        
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
+        
+        if (oscSettings.rainbow) {
+            const hue = (i / bufferLength) * 360;
+            canvasCtx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+            canvasCtx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+        } else {
+            canvasCtx.strokeStyle = oscSettings.color;
+        }
+        
+        if (oscSettings.dots) {
+            canvasCtx.fillStyle = oscSettings.rainbow ? `hsl(${(i / bufferLength) * 360}, 100%, 50%)` : oscSettings.color;
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, oscSettings.lineWidth / 2, 0, Math.PI * 2);
+            canvasCtx.fill();
+        } else {
+            if (i === 0) {
+                canvasCtx.moveTo(x, y);
+            } else {
+                canvasCtx.lineTo(x, y);
+            }
+        }
+    }
+    
+    if (!oscSettings.dots) {
+        canvasCtx.closePath();
+        canvasCtx.stroke();
+        
+        if (oscSettings.fill) {
+            const color = hexToRgb(oscSettings.color);
+            canvasCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.2)`;
+            canvasCtx.fill();
+        }
+    }
+    
+    // Mirror effect (inner circle)
+    if (oscSettings.mirror) {
+        canvasCtx.beginPath();
+        for (let i = 0; i < bufferLength; i++) {
+            const angle = (i / bufferLength) * Math.PI * 2;
+            const amplitude = (dataArray[i] / 255.0) * oscSettings.amplification;
+            const r = radius - amplitude * 100;
+            
+            const x = centerX + Math.cos(angle) * r;
+            const y = centerY + Math.sin(angle) * r;
+            
+            if (i === 0) {
+                canvasCtx.moveTo(x, y);
+            } else {
+                canvasCtx.lineTo(x, y);
+            }
+        }
+        canvasCtx.closePath();
+        canvasCtx.stroke();
+    }
+}
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : {r: 0, g: 255, b: 65};
 }
 
 // Start the visualizer
 drawWaveform();
+

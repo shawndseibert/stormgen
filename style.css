@@ -8,7 +8,7 @@
 .preset-buttons {
     display: flex;
     gap: 8px;
-    margin-bottom: 18px;
+    margin-bottom: 8px;
     padding: 0;
 }
 
@@ -836,5 +836,76 @@ button:disabled {
 
 #currentTime, #totalTime {
     text-shadow: 0 0 3px #00ff41;
+}
+
+/* OSC Controls Styling */
+#osc-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 18px 16px 18px;
+    box-sizing: border-box;
+}
+
+#osc-controls label {
+    width: 100%;
+    margin-left: 0;
+    margin-bottom: 0;
+}
+
+.osc-mode-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.osc-mode-btn {
+    padding: 10px;
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid #00ff41;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-shadow: 0 0 3px #00ff41;
+}
+
+.osc-mode-btn:hover {
+    background: rgba(0, 255, 65, 0.2);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+.osc-mode-btn.active {
+    background: rgba(0, 255, 65, 0.3);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.7);
+    font-weight: bold;
+}
+
+#osc-controls input[type="color"] {
+    width: 100%;
+    height: 40px;
+    border: 2px solid #00ff41;
+    background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    border-radius: 4px;
+    margin-top: 6px;
+}
+
+#osc-controls input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 4px;
+}
+
+#osc-controls input[type="color"]::-webkit-color-swatch {
+    border: 1px solid #00ff41;
+    border-radius: 2px;
+}
+
+#osc-controls input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    cursor: pointer;
+    accent-color: #00ff41;
 }
 

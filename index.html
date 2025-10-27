@@ -19,54 +19,119 @@
             <canvas id="waveform"></canvas>
         </div>
         
+        <!-- Music Playback Controls (directly under waveform) -->
+        <div id="music-playback-section">
+            <div id="current-track-display">No track loaded</div>
+            
+            <!-- Playback Controls -->
+            <div id="music-controls-row">
+                <button id="musicPlayPauseBtn">▶ Play</button>
+                <button id="musicStopBtn">⏹ Stop</button>
+                <button id="musicPrevBtn">⏮ Prev</button>
+                <button id="musicNextBtn">⏭ Next</button>
+            </div>
+            
+            <!-- Track Position Slider -->
+            <div id="track-position-section">
+                <input type="range" id="trackPosition" min="0" max="100" value="0" step="0.1">
+                <div id="track-time">
+                    <span id="currentTime">0:00</span>
+                    <span id="totalTime">0:00</span>
+                </div>
+            </div>
+        </div>
+        
         <div class="controls">
+            <!-- Start Storm Button (above presets) -->
+            <button id="stormToggleBtn" style="width:100%;height:48px;margin-bottom:8px;">Start Storm</button>
+            
             <div class="preset-buttons">
                 <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
                 <button class="preset-btn" id="presetIndoor">🛋️ Indoor</button>
                 <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
             </div>
+            
             <details open>
-                <summary>Rain Options</summary>
-                <label>Rain Volume
-                    <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0">
-                </label>
-                <label for="rainReverb">Rain Reverb Mix
-                    <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
-                    <span id="rainReverbLabel">0.00</span>
-                </label>
-            </details>
-            <details open>
-                <summary>Thunder Options</summary>
-                <div class="thunder-options-label">
-                    <label>Thunder Volume
-                        <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="1">
-                    </label>
-                    <label for="thunderReverb">Thunder Reverb Mix
-                        <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
-                        <span id="thunderReverbLabel">0.00</span>
-                    </label>
-                    <div class="thunder-options-frequency">
-                        <label>Thunder Frequency</label>
-                        <label>Min Interval
-                            <input type="range" id="thunderMin" min="5" max="60" step="1" value="5">
-                        </label>
-                        <label>Max Interval
-                            <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
-                        </label>
-                        <span id="frequencyLabel">5-60s</span>
+                <summary>OSC (Oscilloscope)</summary>
+                <div id="osc-controls">
+                    <!-- Waveform Display Mode -->
+                    <label>Display Mode</label>
+                    <div class="osc-mode-buttons">
+                        <button class="osc-mode-btn active" data-mode="waveform">Waveform</button>
+                        <button class="osc-mode-btn" data-mode="bars">Bars</button>
+                        <button class="osc-mode-btn" data-mode="circular">Circular</button>
                     </div>
+                    
+                    <!-- Line Width -->
+                    <label for="oscLineWidth">Line Width
+                        <input type="range" id="oscLineWidth" min="1" max="10" step="0.5" value="2">
+                        <span id="oscLineWidthLabel">2</span>
+                    </label>
+                    
+                    <!-- Glow/Shadow Blur -->
+                    <label for="oscGlowIntensity">Glow Intensity
+                        <input type="range" id="oscGlowIntensity" min="0" max="30" step="1" value="10">
+                        <span id="oscGlowIntensityLabel">10</span>
+                    </label>
+                    
+                    <!-- Amplification -->
+                    <label for="oscAmplification">Amplification
+                        <input type="range" id="oscAmplification" min="0.5" max="5" step="0.1" value="1">
+                        <span id="oscAmplificationLabel">1.0x</span>
+                    </label>
+                    
+                    <!-- Smoothing -->
+                    <label for="oscSmoothing">Smoothing
+                        <input type="range" id="oscSmoothing" min="0" max="0.99" step="0.01" value="0.8">
+                        <span id="oscSmoothingLabel">0.80</span>
+                    </label>
+                    
+                    <!-- FFT Size -->
+                    <label for="oscFFTSize">Resolution (FFT)
+                        <input type="range" id="oscFFTSize" min="5" max="13" step="1" value="11">
+                        <span id="oscFFTSizeLabel">2048</span>
+                    </label>
+                    
+                    <!-- Color Picker -->
+                    <label for="oscColor">Waveform Color
+                        <input type="color" id="oscColor" value="#00ff41">
+                    </label>
+                    
+                    <!-- Background Color -->
+                    <label for="oscBgColor">Background Color
+                        <input type="color" id="oscBgColor" value="#000a05">
+                    </label>
+                    
+                    <!-- Fade Trail Effect -->
+                    <label for="oscFadeTrail">Trail Effect
+                        <input type="range" id="oscFadeTrail" min="0" max="1" step="0.05" value="0">
+                        <span id="oscFadeTrailLabel">Off</span>
+                    </label>
+                    
+                    <!-- Mirror Effect -->
+                    <label>
+                        <input type="checkbox" id="oscMirror">
+                        Mirror Effect
+                    </label>
+                    
+                    <!-- Fill Under Wave -->
+                    <label>
+                        <input type="checkbox" id="oscFill">
+                        Fill Under Wave
+                    </label>
+                    
+                    <!-- Dots Mode -->
+                    <label>
+                        <input type="checkbox" id="oscDots">
+                        Dots Mode
+                    </label>
+                    
+                    <!-- Rainbow Mode -->
+                    <label>
+                        <input type="checkbox" id="oscRainbow">
+                        Rainbow Color Mode
+                    </label>
                 </div>
-            </details>
-            <details open>
-                <summary>Audio Filter</summary>
-                <label>Lowpass Filter
-                    <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
-                    <span id="lowpassLabel">22050 Hz</span>
-                </label>
-            </details>
-            <details open>
-                <summary>Sounds</summary>
-                <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:4px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
             </details>
             
             <details open>
@@ -138,40 +203,61 @@
                 </div>
             </details>
             
-            <!-- Music Playback Controls (below Music tab) -->
-            <div id="music-playback-section">
-                <div id="current-track-display">No track loaded</div>
-                
-                <!-- Playback Controls -->
-                <div id="music-controls-row">
-                    <button id="musicPlayPauseBtn">▶ Play</button>
-                    <button id="musicStopBtn">⏹ Stop</button>
-                    <button id="musicPrevBtn">⏮ Prev</button>
-                    <button id="musicNextBtn">⏭ Next</button>
-                </div>
-                
-                <!-- Track Position Slider -->
-                <div id="track-position-section">
-                    <input type="range" id="trackPosition" min="0" max="100" value="0" step="0.1">
-                    <div id="track-time">
-                        <span id="currentTime">0:00</span>
-                        <span id="totalTime">0:00</span>
+            <details open>
+                <summary>Rain Options</summary>
+                <label>Rain Volume
+                    <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0">
+                </label>
+                <label for="rainReverb">Rain Reverb Mix
+                    <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
+                    <span id="rainReverbLabel">0.00</span>
+                </label>
+            </details>
+            
+            <details open>
+                <summary>Thunder Options</summary>
+                <div class="thunder-options-label">
+                    <label>Thunder Volume
+                        <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="1">
+                    </label>
+                    <label for="thunderReverb">Thunder Reverb Mix
+                        <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
+                        <span id="thunderReverbLabel">0.00</span>
+                    </label>
+                    <div class="thunder-options-frequency">
+                        <label>Thunder Frequency</label>
+                        <label>Min Interval
+                            <input type="range" id="thunderMin" min="5" max="60" step="1" value="5">
+                        </label>
+                        <label>Max Interval
+                            <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
+                        </label>
+                        <span id="frequencyLabel">5-60s</span>
                     </div>
                 </div>
-            </div>
+            </details>
+            
+            <details open>
+                <summary>Audio Filter</summary>
+                <label>Lowpass Filter
+                    <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
+                    <span id="lowpassLabel">22050 Hz</span>
+                </label>
+            </details>
+            
+            <details open>
+                <summary>Sounds</summary>
+                <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:4px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
+            </details>
 
         </div>
-        <div class="button-row">
-            <button id="stormToggleBtn" style="width:100%;height:48px;margin-bottom:6px;">Start Storm</button>
+    </div>
     <style>
     .storm-icon.active {
         filter: brightness(2) drop-shadow(0 0 10px yellow);
         transition: filter 0.2s;
     }
     </style>
-            <!-- birdsMuteBtn moved under Rain Volume -->
-        </div>
-    </div>
     <script src="app.js"></script>
     <script>
     // Collapsible panels state persistence
