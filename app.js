@@ -131,6 +131,7 @@ let nextMusicGain = null; // Gain node for next track
 let crossfadeDuration = 25; // seconds (default)
 let isCrossfading = false;
 let crossfadeCheckInterval = null;
+let activeFadeInterval = null; // Store the active fade interval
 let db = null; // IndexedDB database
 
 // Weather icon element
@@ -601,6 +602,40 @@ function stopDefaultMusic() {
 }
 
 // ==================== USER PLAYLIST FUNCTIONS ====================
+
+// Clean up track name for display (remove album info, track numbers, file extensions)
+function getCleanTrackName(filename) {
+    if (!filename) return '';
+    
+    // Remove file extension
+    let name = filename.replace(/\.(mp3|wav|ogg|m4a|flac)$/i, '');
+    
+    // Try to parse common formats:
+    // "Artist - Album - ## Title" -> "Artist - Title"
+    // "Artist, Other Artist - Album - ## Title" -> "Artist, Other Artist - Title"
+    
+    // Split by " - " to get segments
+    const segments = name.split(' - ');
+    
+    if (segments.length >= 3) {
+        // Format: Artist - Album - Track# Title
+        // Keep first segment (artist) and last segment (title)
+        const artist = segments[0].trim();
+        let title = segments[segments.length - 1].trim();
+        
+        // Remove leading track numbers from title (e.g., "03 Title" -> "Title")
+        title = title.replace(/^\d{1,3}\s+/, '');
+        
+        return `${artist} - ${title}`;
+    } else if (segments.length === 2) {
+        // Format: Artist - Title (already clean)
+        return name;
+    } else {
+        // Single segment, just remove track numbers if present
+        return name.replace(/^\d{1,3}\s+/, '').trim();
+    }
+}
+
 // Load playlist from IndexedDB
 async function loadPlaylistFromStorage() {
     try {
@@ -673,9 +708,15 @@ function renderPlaylist() {
             item.classList.add('active');
         }
         
+        // Add up-next class to the next track when crossfading
+        const nextIndex = (currentTrackIndex + 1) % userPlaylist.length;
+        if (isCrossfading && index === nextIndex) {
+            item.classList.add('up-next');
+        }
+        
         const nameSpan = document.createElement('span');
         nameSpan.className = 'track-name';
-        nameSpan.textContent = track.name;
+        nameSpan.textContent = getCleanTrackName(track.name);
         nameSpan.onclick = () => loadTrack(index);
         
         const controls = document.createElement('div');
@@ -878,45 +919,151 @@ function playNextTrack() {
 function updateCurrentTrackDisplay() {
     const currentDisplay = document.getElementById('current-track-display');
     const nextDisplay = document.getElementById('next-track-display');
+    const summaryTrackName = document.getElementById('summary-track-name');
+    const summaryTrackInfo = document.querySelector('.summary-track-info');
     if (!currentDisplay) return;
     
     const currentTrackName = currentDisplay.querySelector('.track-name');
     const nextTrackName = nextDisplay ? nextDisplay.querySelector('.track-name') : null;
     
+    // Helper function to set text and check if scrolling is needed
+    function setTextWithScroll(element, text) {
+        if (!element) return;
+        
+        // Remove scrolling class first
+        element.classList.remove('scrolling');
+        
+        // Wrap text in span if not already wrapped
+        if (!element.querySelector('span')) {
+            element.innerHTML = '<span></span>';
+        }
+        
+        const span = element.querySelector('span');
+        span.textContent = text;
+        
+        // Reset any transform
+        span.style.transform = '';
+        
+        // Check if text overflows after a brief delay to allow layout
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const containerWidth = element.offsetWidth;
+                const textWidth = span.offsetWidth;
+                
+                // Add some padding/tolerance (5px) to prevent unnecessary scrolling
+                if (textWidth > containerWidth + 5) {
+                    // Calculate only the overflow amount that needs to be scrolled
+                    const overflowAmount = textWidth - containerWidth;
+                    element.style.setProperty('--scroll-distance', `-${overflowAmount}px`);
+                    element.classList.add('scrolling');
+                } else {
+                    // Make sure it's centered if no scrolling needed
+                    element.style.removeProperty('--scroll-distance');
+                }
+            });
+        });
+    }
+    
     if (isCrossfading && currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
         // Show both current and next track during crossfade
         const nextIndex = (currentTrackIndex + 1) % userPlaylist.length;
-        if (currentTrackName) {
-            currentTrackName.textContent = userPlaylist[currentTrackIndex].name;
+        const cleanName = getCleanTrackName(userPlaylist[currentTrackIndex].name);
+        const nextCleanName = getCleanTrackName(userPlaylist[nextIndex].name);
+        
+        setTextWithScroll(currentTrackName, cleanName);
+        
+        if (summaryTrackName) {
+            // Show both tracks with distinction in collapsed summary
+            const content = `<span class="current-track-summary">${cleanName}</span> <span class="arrow">→</span> <span class="next-track-summary">${nextCleanName}</span>`;
+            summaryTrackName.innerHTML = `<span class="summary-content">${content}</span>`;
+            
+            // Check if summary needs scrolling - use requestAnimationFrame for accurate measurement
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const container = summaryTrackName;
+                    const contentSpan = summaryTrackName.querySelector('.summary-content');
+                    if (contentSpan) {
+                        // Measure container width (constrained by max-width: 400px)
+                        const containerWidth = container.offsetWidth;
+                        
+                        // Get the full natural width of the content using getBoundingClientRect for sub-pixel accuracy
+                        const contentRect = contentSpan.getBoundingClientRect();
+                        const contentWidth = Math.ceil(contentRect.width);
+                        
+                        if (contentWidth > containerWidth + 5) {
+                            // Add extra 10px buffer to ensure all text is visible
+                            const overflowAmount = contentWidth - containerWidth + 10;
+                            container.style.setProperty('--summary-scroll-distance', `-${overflowAmount}px`);
+                            container.classList.add('scrolling');
+                        } else {
+                            container.classList.remove('scrolling');
+                            container.style.removeProperty('--summary-scroll-distance');
+                        }
+                    }
+                });
+            });
+        }
+        if (summaryTrackInfo) {
+            summaryTrackInfo.classList.add('crossfading');
         }
         if (nextDisplay && nextTrackName) {
-            nextTrackName.textContent = userPlaylist[nextIndex].name;
-            nextDisplay.style.display = 'block';
+            nextDisplay.classList.add('visible');
             nextDisplay.classList.add('crossfade-active');
+            
+            // Wait for the transition to complete before calculating scroll
+            setTimeout(() => {
+                setTextWithScroll(currentTrackName, cleanName);
+                setTextWithScroll(nextTrackName, nextCleanName);
+            }, 450); // Slightly longer than the 0.4s transition
         }
     } else if (currentTrackIndex >= 0 && currentTrackIndex < userPlaylist.length) {
         // Show only current track
-        if (currentTrackName) {
-            currentTrackName.textContent = userPlaylist[currentTrackIndex].name;
+        const cleanName = getCleanTrackName(userPlaylist[currentTrackIndex].name);
+        
+        if (summaryTrackName) {
+            summaryTrackName.textContent = cleanName;
+            summaryTrackName.classList.remove('scrolling');
+        }
+        if (summaryTrackInfo) {
+            summaryTrackInfo.classList.remove('crossfading');
         }
         if (nextDisplay) {
-            nextDisplay.style.display = 'none';
+            nextDisplay.classList.remove('visible');
             nextDisplay.classList.remove('crossfade-active');
+            
+            // Wait for the transition to complete before calculating scroll
+            setTimeout(() => {
+                setTextWithScroll(currentTrackName, cleanName);
+            }, 450);
+        } else {
+            setTextWithScroll(currentTrackName, cleanName);
         }
     } else if (defaultMusicAudio && !defaultMusicAudio.paused) {
-        if (currentTrackName) {
-            currentTrackName.textContent = 'Default Music';
+        setTextWithScroll(currentTrackName, 'Default Music');
+        
+        if (summaryTrackName) {
+            summaryTrackName.textContent = 'Default Music';
+        }
+        if (summaryTrackInfo) {
+            summaryTrackInfo.classList.remove('crossfading');
         }
         if (nextDisplay) {
-            nextDisplay.style.display = 'none';
+            nextDisplay.classList.remove('visible');
             nextDisplay.classList.remove('crossfade-active');
         }
     } else {
         if (currentTrackName) {
-            currentTrackName.textContent = 'No track loaded';
+            currentTrackName.classList.remove('scrolling');
+            currentTrackName.innerHTML = '<span>No track loaded</span>';
+        }
+        if (summaryTrackName) {
+            summaryTrackName.textContent = 'No track loaded';
+        }
+        if (summaryTrackInfo) {
+            summaryTrackInfo.classList.remove('crossfading');
         }
         if (nextDisplay) {
-            nextDisplay.style.display = 'none';
+            nextDisplay.classList.remove('visible');
             nextDisplay.classList.remove('crossfade-active');
         }
     }
@@ -926,8 +1073,17 @@ function updateCurrentTrackDisplay() {
 function playUserMusic() {
     if (currentTrackIndex < 0 || currentTrackIndex >= userPlaylist.length) return;
     
+    // Don't cancel crossfade if just resuming playback
+    // Only cancel if we're loading a different track
     const track = userPlaylist[currentTrackIndex];
     if (!track.url) return;
+    
+    const isResumingSameTrack = userMusicAudio && userMusicAudio.paused && userMusicAudio.src === track.url;
+    
+    if (!isResumingSameTrack && isCrossfading) {
+        // Loading a new track, cancel crossfade
+        cancelCrossfade();
+    }
     
     // Resume AudioContext if suspended
     if (audioCtx.state === 'suspended') {
@@ -962,14 +1118,27 @@ function playUserMusic() {
         
         // Monitor for crossfade timing
         userMusicAudio.addEventListener('timeupdate', checkCrossfadeTime);
+    } else if (!isResumingSameTrack) {
+        // Loading a new track - ensure gain is at proper volume
+        const musicVolumeSlider = document.getElementById('musicVolume');
+        const targetVolume = musicVolumeSlider ? parseFloat(musicVolumeSlider.value) / 100 : 1;
+        userMusicGain.gain.value = targetVolume;
     }
+    // If resuming same track, keep current gain value (might be mid-crossfade)
     
     // If audio is paused, just resume; otherwise load new track
-    if (userMusicAudio.paused && userMusicAudio.src === track.url) {
+    if (isResumingSameTrack) {
         // Simply resume playback at current position
         userMusicAudio.play().catch(err => {
             console.error('Music playback failed:', err);
         });
+        
+        // Resume next track too if crossfading
+        if (isCrossfading && nextMusicAudio && nextMusicAudio.paused) {
+            nextMusicAudio.play().catch(err => {
+                console.error('Next track playback failed:', err);
+            });
+        }
     } else {
         // Load and play new track
         userMusicAudio.src = track.url;
@@ -996,6 +1165,11 @@ function pauseUserMusic() {
         userMusicAudio.pause();
     }
     
+    // Also pause next track if crossfading
+    if (isCrossfading && nextMusicAudio) {
+        nextMusicAudio.pause();
+    }
+    
     // Update button text
     const playPauseBtn = document.getElementById('musicPlayPauseBtn');
     if (playPauseBtn) playPauseBtn.textContent = '▶ Play';
@@ -1003,21 +1177,53 @@ function pauseUserMusic() {
 
 // Stop user music
 function stopUserMusic() {
+    // Cancel any active crossfade first
+    cancelCrossfade();
+    
     if (userMusicAudio) {
         userMusicAudio.pause();
         userMusicAudio.currentTime = 0;
     }
     
-    // Stop any crossfading track
-    if (nextMusicAudio) {
-        nextMusicAudio.pause();
-        nextMusicAudio = null;
-    }
-    isCrossfading = false;
-    
     // Update button text
     const playPauseBtn = document.getElementById('musicPlayPauseBtn');
     if (playPauseBtn) playPauseBtn.textContent = '▶ Play';
+}
+
+// Cancel active crossfade and clean up
+function cancelCrossfade() {
+    if (!isCrossfading) return;
+    
+    // Clear the fade interval
+    if (activeFadeInterval) {
+        clearInterval(activeFadeInterval);
+        activeFadeInterval = null;
+    }
+    
+    // Stop and clean up next track
+    if (nextMusicAudio) {
+        nextMusicAudio.pause();
+        nextMusicAudio.currentTime = 0;
+        nextMusicAudio = null;
+    }
+    
+    if (nextMusicGain) {
+        nextMusicGain.disconnect();
+        nextMusicGain = null;
+    }
+    
+    // Restore current track volume to full
+    if (userMusicGain) {
+        const musicVolumeSlider = document.getElementById('musicVolume');
+        const targetVolume = musicVolumeSlider ? parseFloat(musicVolumeSlider.value) / 100 : 1;
+        userMusicGain.gain.value = targetVolume;
+    }
+    
+    isCrossfading = false;
+    
+    // Update display
+    updateCurrentTrackDisplay();
+    renderPlaylist();
 }
 
 // ==================== CROSSFADE FUNCTIONS ====================
@@ -1026,17 +1232,6 @@ function checkCrossfadeTime() {
     if (!userMusicAudio.duration || isNaN(userMusicAudio.duration)) return;
     
     const timeRemaining = userMusicAudio.duration - userMusicAudio.currentTime;
-    const nextDisplay = document.getElementById('next-track-display');
-    const nextTrackName = nextDisplay ? nextDisplay.querySelector('.track-name') : null;
-    
-    // Show next track preview 5 seconds before crossfade starts
-    if (timeRemaining <= (crossfadeDuration + 5) && timeRemaining > crossfadeDuration && nextDisplay && nextTrackName) {
-        const nextIndex = (currentTrackIndex + 1) % userPlaylist.length;
-        if (userPlaylist.length > 1) {
-            nextTrackName.textContent = userPlaylist[nextIndex].name;
-            nextDisplay.style.display = 'block';
-        }
-    }
     
     // Start crossfade when remaining time equals crossfade duration
     if (timeRemaining <= crossfadeDuration && timeRemaining > 0) {
@@ -1079,15 +1274,13 @@ function startCrossfade() {
     
     // Update display to show crossfade
     updateCurrentTrackDisplay();
-    
-    // Get target volume from slider
-    const musicVolumeSlider = document.getElementById('musicVolume');
-    const targetVolume = musicVolumeSlider ? parseFloat(musicVolumeSlider.value) / 100 : 1;
+    renderPlaylist(); // Update playlist to show up-next animation
     
     // Perform the crossfade
-    const fadeInterval = setInterval(() => {
+    activeFadeInterval = setInterval(() => {
         if (!userMusicAudio || !nextMusicAudio) {
-            clearInterval(fadeInterval);
+            clearInterval(activeFadeInterval);
+            activeFadeInterval = null;
             return;
         }
         
@@ -1096,9 +1289,14 @@ function startCrossfade() {
         
         if (fadeProgress >= 1 || timeRemaining <= 0) {
             // Crossfade complete
-            clearInterval(fadeInterval);
+            clearInterval(activeFadeInterval);
+            activeFadeInterval = null;
             completeCrossfade(nextIndex);
         } else {
+            // Get current target volume from slider (in real-time)
+            const musicVolumeSlider = document.getElementById('musicVolume');
+            const targetVolume = musicVolumeSlider ? parseFloat(musicVolumeSlider.value) / 100 : 1;
+            
             // Fade out current, fade in next using gain nodes
             userMusicGain.gain.value = targetVolume * (1 - fadeProgress);
             nextMusicGain.gain.value = targetVolume * fadeProgress;
@@ -1119,8 +1317,11 @@ function completeCrossfade(nextIndex) {
     nextMusicAudio = null;
     nextMusicGain = null;
     
-    // Update track index and UI
+    // Update track index
     currentTrackIndex = nextIndex;
+    
+    // Reset crossfade state BEFORE updating display
+    isCrossfading = false;
     
     // Add flash animation to current track display
     const currentDisplay = document.getElementById('current-track-display');
@@ -1131,6 +1332,7 @@ function completeCrossfade(nextIndex) {
         }, 600);
     }
     
+    // Update UI now that crossfade is complete
     updateCurrentTrackDisplay();
     renderPlaylist();
     
@@ -1138,9 +1340,6 @@ function completeCrossfade(nextIndex) {
     if (userMusicAudio.duration && !isNaN(userMusicAudio.duration)) {
         updateTrackDuration();
     }
-    
-    // Reset crossfade state
-    isCrossfading = false;
     
     // Set up event listeners for the new current track
     userMusicAudio.addEventListener('timeupdate', updateTrackPosition);
@@ -1192,12 +1391,26 @@ function formatTime(seconds) {
 }
 
 function seekTrack(percentage) {
+    // Cancel any active crossfade when seeking
+    if (isCrossfading) {
+        cancelCrossfade();
+    }
+    
     // Use whichever audio is currently active
     const activeAudio = (userMusicAudio && !userMusicAudio.paused) ? userMusicAudio : defaultMusicAudio;
     if (!activeAudio || !activeAudio.duration) return;
     
     const newTime = (percentage / 100) * activeAudio.duration;
     activeAudio.currentTime = newTime;
+    
+    // After seeking, check if we should restart crossfade
+    // This will be handled automatically by the timeupdate event triggering checkCrossfadeTime()
+    // But we can force an immediate check for responsiveness
+    if (userMusicAudio && !userMusicAudio.paused) {
+        requestAnimationFrame(() => {
+            checkCrossfadeTime();
+        });
+    }
 }
 
 // ==================== RADIO EQ PRESETS ====================
@@ -1699,14 +1912,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     musicVolumeSlider.addEventListener('input', () => {
         const volume = parseFloat(musicVolumeSlider.value) / 100;
         
-        // Update user music gain node if it exists
-        if (userMusicGain) {
-            userMusicGain.gain.value = volume;
+        // If crossfading, don't override gain values - the crossfade interval manages them
+        if (isCrossfading) {
+            // Just store the target volume, the crossfade will use it
+            // Don't directly set gain values during crossfade
+        } else {
+            // Update user music gain node if it exists (only when not crossfading)
+            if (userMusicGain) {
+                userMusicGain.gain.value = volume;
+            }
         }
-        // Update next track gain if crossfading (maintain relative fade level)
-        if (nextMusicGain && isCrossfading) {
-            // Don't update during crossfade - let the fade handle it
-        }
+        
         // Update default music volume
         if (defaultMusicAudio) {
             defaultMusicAudio.volume = volume;
@@ -1808,6 +2024,24 @@ window.addEventListener('DOMContentLoaded', async () => {
         const saved = localStorage.getItem(key);
         
         if (saved === 'closed') {
+            panel.open = false;
+        }
+        
+        panel.addEventListener('toggle', () => {
+            localStorage.setItem(key, panel.open ? 'open' : 'closed');
+        });
+    });
+    
+    // ===== STANDALONE PANELS =====
+    const standalonePanels = document.querySelectorAll('details.standalone-panel');
+    standalonePanels.forEach((panel, idx) => {
+        const key = 'stormgen_standalone_' + idx;
+        const saved = localStorage.getItem(key);
+        
+        // Restore state from localStorage, default to closed
+        if (saved === 'open') {
+            panel.open = true;
+        } else {
             panel.open = false;
         }
         

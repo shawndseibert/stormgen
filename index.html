@@ -19,142 +19,176 @@
             <canvas id="waveform"></canvas>
         </div>
         
-        <!-- Music Playback Controls (directly under waveform) -->
-        <div id="music-playback-section">
-            <div id="track-display-container">
-                <div id="current-track-display">
-                    <span class="track-label">NOW PLAYING</span>
-                    <span class="track-name">No track loaded</span>
+        <!-- OSC (Oscilloscope) Controls (directly under waveform) -->
+        <details class="standalone-panel">
+            <summary>OSC (Oscilloscope)</summary>
+            <div id="osc-controls">
+                <!-- Waveform Display Mode -->
+                <label>Display Mode</label>
+                <div class="osc-mode-buttons">
+                    <button class="osc-mode-btn active" data-mode="waveform">Waveform</button>
+                    <button class="osc-mode-btn" data-mode="bars">Bars</button>
+                    <button class="osc-mode-btn" data-mode="circular">Circular</button>
                 </div>
-                <div id="next-track-display" style="display: none;">
-                    <span class="track-label">UP NEXT</span>
-                    <span class="track-name"></span>
-                </div>
-            </div>
-            
-            <!-- Music Volume Slider -->
-            <div id="playback-volume-section">
-                <label for="playbackMusicVolume">Music Volume
-                    <input type="range" id="playbackMusicVolume" min="0" max="100" value="100">
-                    <span id="playbackMusicVolumeLabel">100</span>
+                
+                <!-- Line Width -->
+                <label for="oscLineWidth">Line Width
+                    <input type="range" id="oscLineWidth" min="1" max="10" step="0.5" value="2">
+                    <span id="oscLineWidthLabel">2</span>
+                </label>
+                
+                <!-- Glow/Shadow Blur -->
+                <label for="oscGlowIntensity">Glow Intensity
+                    <input type="range" id="oscGlowIntensity" min="0" max="30" step="1" value="10">
+                    <span id="oscGlowIntensityLabel">10</span>
+                </label>
+                
+                <!-- Amplification -->
+                <label for="oscAmplification">Amplification
+                    <input type="range" id="oscAmplification" min="0.5" max="5" step="0.1" value="1">
+                    <span id="oscAmplificationLabel">1.0x</span>
+                </label>
+                
+                <!-- Smoothing -->
+                <label for="oscSmoothing">Smoothing
+                    <input type="range" id="oscSmoothing" min="0" max="0.99" step="0.01" value="0.8">
+                    <span id="oscSmoothingLabel">0.80</span>
+                </label>
+                
+                <!-- FFT Size -->
+                <label for="oscFFTSize">Resolution (FFT)
+                    <input type="range" id="oscFFTSize" min="5" max="13" step="1" value="11">
+                    <span id="oscFFTSizeLabel">2048</span>
+                </label>
+                
+                <!-- Color Picker -->
+                <label for="oscColor">Waveform Color
+                    <input type="color" id="oscColor" value="#00ff41">
+                </label>
+                
+                <!-- Background Color -->
+                <label for="oscBgColor">Background Color
+                    <input type="color" id="oscBgColor" value="#000a05">
+                </label>
+                
+                <!-- Fade Trail Effect -->
+                <label for="oscFadeTrail">Trail Effect
+                    <input type="range" id="oscFadeTrail" min="0" max="1" step="0.05" value="0">
+                    <span id="oscFadeTrailLabel">Off</span>
+                </label>
+                
+                <!-- Mirror Effect -->
+                <label>
+                    <input type="checkbox" id="oscMirror">
+                    Mirror Effect
+                </label>
+                
+                <!-- Fill Under Wave -->
+                <label>
+                    <input type="checkbox" id="oscFill">
+                    Fill Under Wave
+                </label>
+                
+                <!-- Dots Mode -->
+                <label>
+                    <input type="checkbox" id="oscDots">
+                    Dots Mode
+                </label>
+                
+                <!-- Rainbow Mode -->
+                <label>
+                    <input type="checkbox" id="oscRainbow">
+                    Rainbow Color Mode
                 </label>
             </div>
+        </details>
+        
+        <!-- Music Playback Controls -->
+        <div class="music-player-wrapper">
+            <details class="standalone-panel music-player-panel" open>
+                <summary>
+                    <span class="summary-track-info">
+                        <span id="summary-track-name">No track loaded</span>
+                    </span>
+                </summary>
+                <div id="music-playback-section">
+                    <!-- Collapsible content (track display and volume) -->
+                    <div class="music-expanded-content">
+                        <div id="track-display-container">
+                            <div id="current-track-display">
+                                <span class="track-label">NOW PLAYING</span>
+                                <span class="track-name">No track loaded</span>
+                            </div>
+                            <div id="next-track-display">
+                                <span class="track-label">UP NEXT</span>
+                                <span class="track-name"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Music Volume Slider -->
+                        <div id="playback-volume-section">
+                            <label for="playbackMusicVolume">Music Volume
+                                <input type="range" id="playbackMusicVolume" min="0" max="100" value="100">
+                                <span id="playbackMusicVolumeLabel">100</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </details>
             
-            <!-- Playback Controls -->
-            <div id="music-controls-row">
-                <button id="musicPlayPauseBtn">▶ Play</button>
-                <button id="musicStopBtn">⏹ Stop</button>
-                <button id="musicPrevBtn">⏮ Prev</button>
-                <button id="musicNextBtn">⏭ Next</button>
-            </div>
-            
-            <!-- Track Position Slider -->
-            <div id="track-position-section">
-                <input type="range" id="trackPosition" min="0" max="100" value="0" step="0.1">
-                <div id="track-time">
-                    <span id="currentTime">0:00</span>
-                    <span id="totalTime">0:00</span>
+            <!-- Always visible controls (outside details but inside wrapper) -->
+            <div id="music-controls-always-visible">
+                <!-- Playback Controls -->
+                <div id="music-controls-row">
+                    <button id="musicPlayPauseBtn">▶ Play</button>
+                    <button id="musicStopBtn">⏹ Stop</button>
+                    <button id="musicPrevBtn">⏮ Prev</button>
+                    <button id="musicNextBtn">⏭ Next</button>
+                </div>
+                
+                <!-- Track Position Slider -->
+                <div id="track-position-section">
+                    <input type="range" id="trackPosition" min="0" max="100" value="0" step="0.1">
+                    <div id="track-time">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="controls">
-            <!-- Start Storm Button (above presets) -->
-            <button id="stormToggleBtn" style="width:100%;height:48px;margin-bottom:8px;">Start Storm</button>
-            
-            <div class="preset-buttons">
-                <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
-                <button class="preset-btn" id="presetIndoor">🛋️ Indoor</button>
-                <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
-            </div>
-            
-            <details open>
-                <summary>OSC (Oscilloscope)</summary>
-                <div id="osc-controls">
-                    <!-- Waveform Display Mode -->
-                    <label>Display Mode</label>
-                    <div class="osc-mode-buttons">
-                        <button class="osc-mode-btn active" data-mode="waveform">Waveform</button>
-                        <button class="osc-mode-btn" data-mode="bars">Bars</button>
-                        <button class="osc-mode-btn" data-mode="circular">Circular</button>
+        <!-- Music Playlist (directly under playback section) -->
+        <details class="standalone-panel">
+            <summary>Music Playlist</summary>
+            <div id="music-controls">
+                <!-- Playlist Management -->
+                <div id="playlist-section">
+                    <div id="playlist-upload">
+                        <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
+                        <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
+                        <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
                     </div>
-                    
-                    <!-- Line Width -->
-                    <label for="oscLineWidth">Line Width
-                        <input type="range" id="oscLineWidth" min="1" max="10" step="0.5" value="2">
-                        <span id="oscLineWidthLabel">2</span>
-                    </label>
-                    
-                    <!-- Glow/Shadow Blur -->
-                    <label for="oscGlowIntensity">Glow Intensity
-                        <input type="range" id="oscGlowIntensity" min="0" max="30" step="1" value="10">
-                        <span id="oscGlowIntensityLabel">10</span>
-                    </label>
-                    
-                    <!-- Amplification -->
-                    <label for="oscAmplification">Amplification
-                        <input type="range" id="oscAmplification" min="0.5" max="5" step="0.1" value="1">
-                        <span id="oscAmplificationLabel">1.0x</span>
-                    </label>
-                    
-                    <!-- Smoothing -->
-                    <label for="oscSmoothing">Smoothing
-                        <input type="range" id="oscSmoothing" min="0" max="0.99" step="0.01" value="0.8">
-                        <span id="oscSmoothingLabel">0.80</span>
-                    </label>
-                    
-                    <!-- FFT Size -->
-                    <label for="oscFFTSize">Resolution (FFT)
-                        <input type="range" id="oscFFTSize" min="5" max="13" step="1" value="11">
-                        <span id="oscFFTSizeLabel">2048</span>
-                    </label>
-                    
-                    <!-- Color Picker -->
-                    <label for="oscColor">Waveform Color
-                        <input type="color" id="oscColor" value="#00ff41">
-                    </label>
-                    
-                    <!-- Background Color -->
-                    <label for="oscBgColor">Background Color
-                        <input type="color" id="oscBgColor" value="#000a05">
-                    </label>
-                    
-                    <!-- Fade Trail Effect -->
-                    <label for="oscFadeTrail">Trail Effect
-                        <input type="range" id="oscFadeTrail" min="0" max="1" step="0.05" value="0">
-                        <span id="oscFadeTrailLabel">Off</span>
-                    </label>
-                    
-                    <!-- Mirror Effect -->
-                    <label>
-                        <input type="checkbox" id="oscMirror">
-                        Mirror Effect
-                    </label>
-                    
-                    <!-- Fill Under Wave -->
-                    <label>
-                        <input type="checkbox" id="oscFill">
-                        Fill Under Wave
-                    </label>
-                    
-                    <!-- Dots Mode -->
-                    <label>
-                        <input type="checkbox" id="oscDots">
-                        Dots Mode
-                    </label>
-                    
-                    <!-- Rainbow Mode -->
-                    <label>
-                        <input type="checkbox" id="oscRainbow">
-                        Rainbow Color Mode
+                    <div id="playlist-container">
+                        <div id="playlist-items"></div>
+                    </div>
+                </div>
+                
+                <!-- Crossfade Control -->
+                <div id="crossfade-section">
+                    <label for="crossfadeDuration">Crossfade Duration
+                        <input type="range" id="crossfadeDuration" min="0" max="60" step="0.5" value="25">
+                        <span id="crossfadeDurationLabel">25.0s</span>
                     </label>
                 </div>
-            </details>
+            </div>
+        </details>
+        
+        <div class="controls">
             
-            <details open>
-                <summary>Music</summary>
-                <div id="music-controls">
-                    <!-- Music Volume and Effects Controls (moved above playlist) -->
+            <details>
+                <summary>Audio Effects & EQ</summary>
+                <div id="audio-effects-controls">
+                    <!-- Music Volume and Effects Controls -->
                     <label for="musicVolume">Music Volume
                         <input type="range" id="musicVolume" min="0" max="100" value="100">
                     </label>
@@ -170,26 +204,6 @@
                         <input type="range" id="musicReverb" min="0" max="1" step="0.01" value="0.3">
                         <span id="musicReverbLabel">0.3</span>
                     </label>
-                    
-                    <!-- Playlist Management -->
-                    <div id="playlist-section">
-                        <div id="playlist-upload">
-                            <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
-                            <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
-                            <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
-                        </div>
-                        <div id="playlist-container">
-                            <div id="playlist-items"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Crossfade Control -->
-                    <div id="crossfade-section">
-                        <label for="crossfadeDuration">Crossfade Duration
-                            <input type="range" id="crossfadeDuration" min="0" max="60" step="0.5" value="25">
-                            <span id="crossfadeDurationLabel">25.0s</span>
-                        </label>
-                    </div>
                     
                     <!-- Radio EQ Presets -->
                     <div id="radio-eq-presets">
@@ -225,55 +239,62 @@
                             <span id="eqTrebleLabel">0 dB</span>
                         </label>
                     </div>
+                    
+                    <!-- Global Audio Filter -->
+                    <label>Global Lowpass Filter
+                        <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
+                        <span id="lowpassLabel">22050 Hz</span>
+                    </label>
                 </div>
             </details>
             
-            <details open>
-                <summary>Rain Options</summary>
-                <label>Rain Volume
-                    <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0">
-                </label>
-                <label for="rainReverb">Rain Reverb Mix
-                    <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
-                    <span id="rainReverbLabel">0.00</span>
-                </label>
-            </details>
-            
-            <details open>
-                <summary>Thunder Options</summary>
-                <div class="thunder-options-label">
-                    <label>Thunder Volume
-                        <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="1">
-                    </label>
-                    <label for="thunderReverb">Thunder Reverb Mix
-                        <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
-                        <span id="thunderReverbLabel">0.00</span>
-                    </label>
-                    <div class="thunder-options-frequency">
-                        <label>Thunder Frequency</label>
-                        <label>Min Interval
-                            <input type="range" id="thunderMin" min="5" max="60" step="1" value="5">
-                        </label>
-                        <label>Max Interval
-                            <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
-                        </label>
-                        <span id="frequencyLabel">5-60s</span>
+            <details>
+                <summary>Storm Environment</summary>
+                <div id="environment-controls">
+                    <!-- Storm Presets -->
+                    <div class="preset-buttons">
+                        <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
+                        <button class="preset-btn" id="presetIndoor">🛋️ Indoor</button>
+                        <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
                     </div>
+                    
+                    <!-- Rain Options -->
+                    <label style="margin-top: 12px;">Rain Volume
+                        <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0">
+                    </label>
+                    <label for="rainReverb">Rain Reverb Mix
+                        <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
+                        <span id="rainReverbLabel">0.00</span>
+                    </label>
+                    
+                    <!-- Thunder Options -->
+                    <div class="thunder-options-label" style="margin-top: 16px;">
+                        <label>Thunder Volume
+                            <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="1">
+                        </label>
+                        <label for="thunderReverb">Thunder Reverb Mix
+                            <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
+                            <span id="thunderReverbLabel">0.00</span>
+                        </label>
+                        <div class="thunder-options-frequency">
+                            <label>Thunder Frequency</label>
+                            <label>Min Interval
+                                <input type="range" id="thunderMin" min="5" max="60" step="1" value="5">
+                            </label>
+                            <label>Max Interval
+                                <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
+                            </label>
+                            <span id="frequencyLabel">5-60s</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Birds Control -->
+                    <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:16px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
                 </div>
             </details>
             
-            <details open>
-                <summary>Audio Filter</summary>
-                <label>Lowpass Filter
-                    <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
-                    <span id="lowpassLabel">22050 Hz</span>
-                </label>
-            </details>
-            
-            <details open>
-                <summary>Sounds</summary>
-                <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:4px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
-            </details>
+            <!-- Start Storm Button -->
+            <button id="stormToggleBtn" style="width:100%;height:48px;margin-top:12px;">Start Storm</button>
 
         </div>
     </div>
@@ -287,16 +308,39 @@
     <script>
     // Collapsible panels state persistence
     document.addEventListener('DOMContentLoaded', function() {
-        const detailsPanels = document.querySelectorAll('.controls details');
-        detailsPanels.forEach((panel, idx) => {
+        // Handle .controls details panels
+        const controlPanels = document.querySelectorAll('.controls details');
+        controlPanels.forEach((panel, idx) => {
             const key = 'stormgen_panel_' + idx;
-            // Restore state from localStorage
+            
+            // Restore state from localStorage, all default to closed
             const saved = localStorage.getItem(key);
             if (saved === 'open') {
                 panel.open = true;
             } else {
                 panel.open = false;
             }
+            
+            // Listen for toggle events
+            panel.addEventListener('toggle', function() {
+                localStorage.setItem(key, panel.open ? 'open' : 'closed');
+            });
+        });
+        
+        // Handle standalone panels (Music Player, OSC, Music Playlist)
+        const standalonePanels = document.querySelectorAll('details.standalone-panel');
+        standalonePanels.forEach((panel, idx) => {
+            const key = 'stormgen_standalone_' + idx;
+            
+            // Restore state from localStorage
+            const saved = localStorage.getItem(key);
+            if (saved === 'open') {
+                panel.open = true;
+            } else if (saved === 'closed') {
+                panel.open = false;
+            }
+            // If no saved state, keep the default from HTML (music player defaults to open)
+            
             // Listen for toggle events
             panel.addEventListener('toggle', function() {
                 localStorage.setItem(key, panel.open ? 'open' : 'closed');

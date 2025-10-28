@@ -78,24 +78,136 @@
     margin-bottom: 0;
 }
 
-/* Music Playback Section (outside collapsible panels) */
-#music-playback-section {
-    background: rgba(0, 20, 10, 0.9);
+/* Music Playback Section (inside collapsible panel) */
+.music-player-wrapper {
+    background: rgba(0, 20, 10, 0.7);
     border: 2px solid #00ff41;
     border-radius: 4px;
-    padding: 16px;
     margin-bottom: 12px;
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+    overflow: hidden;
+}
+
+.music-player-wrapper .standalone-panel {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.music-player-panel summary {
+    position: relative;
+    padding-right: 30px;
+}
+
+.summary-track-info {
+    display: inline-block;
+    margin-left: 12px;
+    color: #00ff41;
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+
+#summary-track-name {
+    overflow: hidden;
+    position: relative;
+    white-space: nowrap;
+    max-width: 400px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Wrapper for scrolling content */
+#summary-track-name .summary-content {
+    display: inline-block;
+    white-space: nowrap;
+    width: max-content; /* Allow content to determine width */
+}
+
+/* Scrolling for long summary text */
+#summary-track-name.scrolling .summary-content {
+    animation: summaryScroll 10s ease-in-out infinite;
+}
+
+@keyframes summaryScroll {
+    0%, 15% {
+        transform: translateX(0);
+    }
+    45%, 55% {
+        transform: translateX(var(--summary-scroll-distance));
+    }
+    85%, 100% {
+        transform: translateX(0);
+    }
+}
+
+/* Styling for current and next track in summary */
+#summary-track-name .current-track-summary {
+    color: #00ff41;
+    font-weight: 600;
+    display: inline-block;
+}
+
+#summary-track-name .next-track-summary {
+    color: #00ff41;
+    opacity: 0.6;
+    font-weight: 400;
+    font-style: italic;
+    display: inline-block;
+    animation: nextTrackPulse 2s ease-in-out infinite;
+}
+
+#summary-track-name .arrow {
+    color: #00ff41;
+    opacity: 0.5;
+    margin: 0 4px;
+    display: inline-block;
+}
+
+/* Pulse animation for upcoming track only */
+@keyframes nextTrackPulse {
+    0%, 100% {
+        opacity: 0.6;
+        text-shadow: 0 0 3px #00ff41;
+    }
+    50% {
+        opacity: 0.9;
+        text-shadow: 0 0 8px #00ff41, 0 0 12px #00ff41;
+    }
+}
+
+#music-playback-section {
+    background: transparent;
+    border: none;
+    padding: 16px 18px 18px 18px;
+    margin-bottom: 0;
+    box-shadow: none;
+}
+
+/* Always visible controls section */
+#music-controls-always-visible {
+    padding: 16px 18px 16px 18px;
+    border-top: 1px solid rgba(0, 255, 65, 0.2);
 }
 
 #music-playback-section #current-track-display {
-    margin-bottom: 12px;
+    margin-bottom: 0;
 }
 
 #track-display-container {
     margin-bottom: 12px;
+    margin-left: -18px;
+    margin-right: -18px;
+    padding-left: 18px;
+    padding-right: 18px;
+    display: flex;
+    gap: 12px;
+    width: calc(100% + 36px);
+    box-sizing: border-box;
 }
 
+/* Both boxes start with these base styles */
 #current-track-display,
 #next-track-display {
     padding: 8px 14px;
@@ -106,16 +218,87 @@
     font-size: 0.85em;
     text-shadow: 0 0 3px #00ff41;
     font-family: 'Share Tech Mono', monospace;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    transition: all 0.3s ease;
+    align-items: center;
+    justify-content: center;
+    min-height: 45px;
+    flex: 1 1 0;
 }
 
+/* Current track - always visible */
+#current-track-display {
+    min-width: 0;
+}
+
+/* Next track - hidden by default, collapses to zero */
 #next-track-display {
-    margin-top: 8px;
-    border-color: rgba(0, 255, 65, 0.5);
-    background: rgba(0, 50, 20, 0.4);
+    flex: 0 0 0;
+    min-width: 0;
+    width: 0;
+    padding: 0;
+    border: none;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.4s ease;
+}
+
+/* When next track is visible, restore all its styling */
+#next-track-display.visible {
+    flex: 1 1 0;
+    width: auto;
+    padding: 8px 14px;
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    opacity: 1;
+}
+
+/* Hide track label, only show track name */
+#current-track-display .track-label,
+#next-track-display .track-label {
+    display: none;
+}
+
+/* Container for scrolling track names */
+#current-track-display .track-name,
+#next-track-display .track-name {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    text-align: left;
+}
+
+/* Inner span for the actual scrolling text */
+#current-track-display .track-name > span,
+#next-track-display .track-name > span {
+    display: inline-block;
+    white-space: nowrap;
+    transform: translateX(0);
+}
+
+/* Ping-pong scrolling animation for long track names */
+@keyframes pingPongScroll {
+    0%, 20% {
+        transform: translateX(0);
+    }
+    50%, 70% {
+        transform: translateX(var(--scroll-distance));
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+#current-track-display .track-name.scrolling > span,
+#next-track-display .track-name.scrolling > span {
+    animation: pingPongScroll 6s ease-in-out infinite;
+}
+
+/* When next track display is visible */
+#next-track-display.visible {
+    opacity: 1;
+    pointer-events: auto; /* Allow interaction when visible */
 }
 
 #current-track-display .track-label,
@@ -124,15 +307,6 @@
     opacity: 0.7;
     font-weight: bold;
     letter-spacing: 1px;
-}
-
-#current-track-display .track-name,
-#next-track-display .track-name {
-    font-size: 1em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
 }
 
 /* Crossfade animation - pulse next track */
@@ -206,6 +380,7 @@
     padding: 18px 18px 16px 18px;
     box-sizing: border-box;
 }
+
 #music-controls-row {
     display: flex;
     gap: 12px;
@@ -235,6 +410,63 @@
     overflow: hidden;
     transition: box-shadow 0.2s;
 }
+
+/* Standalone panels (outside .controls) - more discreet */
+details.standalone-panel {
+    background: rgba(0, 20, 10, 0.85);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 15px rgba(0, 0, 0, 0.7);
+    margin-bottom: 12px;
+    border: 1px solid rgba(0, 255, 65, 0.6);
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+details.standalone-panel[open] {
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.35), inset 0 0 15px rgba(0, 0, 0, 0.7);
+}
+
+details.standalone-panel summary {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #00ff41;
+    background: rgba(0, 30, 15, 0.7);
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.4);
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+    position: relative;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 4px #00ff41;
+}
+
+details.standalone-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+details.standalone-panel summary:after {
+    content: '\25BC';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%) rotate(0deg);
+    transition: transform 0.2s;
+    color: #00ff41;
+    font-size: 0.7em;
+    text-shadow: 0 0 4px #00ff41;
+}
+
+details.standalone-panel[open] summary:after {
+    transform: translateY(-50%) rotate(-180deg);
+}
+
+details.standalone-panel > *:not(summary) {
+    padding: 16px 18px 16px 18px;
+}
+
 .controls details[open] {
     box-shadow: 0 0 25px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
@@ -273,6 +505,18 @@
 }
 .controls details > *:not(summary) {
     padding: 14px 16px 10px 16px;
+}
+
+/* Specific styling for categorized panels */
+#audio-effects-controls,
+#environment-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#environment-controls {
+    padding: 18px 16px 16px 16px;
 }
 
 body {
@@ -622,6 +866,11 @@ button:disabled {
     margin-bottom: 16px;
 }
 
+#crossfade-section {
+    margin-top: 8px;
+    padding-left: 4px;
+}
+
 #playlist-upload {
     display: flex;
     gap: 8px;
@@ -741,8 +990,14 @@ button:disabled {
     box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
 }
 
+/* Up next playlist item - pulsing animation during crossfade */
+.playlist-item.up-next {
+    animation: crossfadePulse 2s ease-in-out infinite;
+}
+
 .track-name {
     flex: 1;
+    min-width: 0;
     color: #00ff41;
     font-size: 0.85em;
     font-family: 'Share Tech Mono', monospace;
