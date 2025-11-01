@@ -85,7 +85,7 @@
     border-radius: 4px;
     margin-bottom: 12px;
     box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to allow sticky positioning */
 }
 
 .music-player-wrapper .standalone-panel {
@@ -95,9 +95,42 @@
     margin-bottom: 0;
 }
 
-.music-player-panel summary {
+.music-player-panel > details > summary {
     position: relative;
     padding-right: 30px;
+    font-size: 0.9em !important;
+    font-weight: 600 !important;
+    color: #00ff41 !important;
+    background: rgba(0, 30, 15, 0.7) !important;
+    padding: 8px 14px !important;
+    border-bottom: 2px solid rgba(0, 255, 65, 0.5) !important;
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 4px #00ff41 !important;
+}
+
+.music-player-panel > details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.music-player-panel > details > summary:after {
+    content: '\25BC';
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    transition: transform 0.2s;
+    color: #00ff41;
+    font-size: 0.8em;
+    text-shadow: 0 0 4px #00ff41;
+}
+
+.music-player-panel > details[open] > summary:after {
+    transform: translateY(-50%) rotate(0deg);
 }
 
 .summary-track-info {
@@ -105,7 +138,7 @@
     margin-left: 12px;
     color: #00ff41;
     font-size: 0.85em;
-    opacity: 0.8;
+    opacity: 1;
 }
 
 
@@ -467,10 +500,60 @@ details.standalone-panel > *:not(summary) {
     padding: 16px 18px 16px 18px;
 }
 
+/* Nested panel inside music playback section */
+details.nested-panel {
+    background: rgba(0, 15, 7, 0.5);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    margin-top: 12px;
+    overflow: hidden;
+}
+
+details.nested-panel summary {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #00ff41;
+    background: rgba(0, 25, 12, 0.6);
+    padding: 8px 12px;
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+    position: relative;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 3px #00ff41;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+}
+
+details.nested-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+details.nested-panel summary:after {
+    content: '\25BC';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%) rotate(0deg);
+    transition: transform 0.2s;
+    color: #00ff41;
+    font-size: 0.65em;
+    text-shadow: 0 0 3px #00ff41;
+}
+
+details.nested-panel[open] summary:after {
+    transform: translateY(-50%) rotate(-180deg);
+}
+
+details.nested-panel > *:not(summary) {
+    padding: 12px;
+}
+
 .controls details[open] {
     box-shadow: 0 0 25px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
-.controls summary {
+.controls > details > summary {
     font-size: 1em;
     font-weight: 700;
     color: #00ff41;
@@ -486,10 +569,10 @@ details.standalone-panel > *:not(summary) {
     letter-spacing: 1px;
     text-shadow: 0 0 5px #00ff41;
 }
-.controls summary::-webkit-details-marker {
+.controls > details > summary::-webkit-details-marker {
     display: none;
 }
-.controls summary:after {
+.controls > details > summary:after {
     content: '\25BC';
     position: absolute;
     right: 16px;
@@ -500,7 +583,7 @@ details.standalone-panel > *:not(summary) {
     font-size: 0.8em;
     text-shadow: 0 0 5px #00ff41;
 }
-.controls details[open] summary:after {
+.controls details[open] > summary:after {
     transform: translateY(-50%) rotate(-180deg);
 }
 .controls details > *:not(summary) {
@@ -618,12 +701,21 @@ h1 {
     width: 100%;
     height: 80px;
     background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #00ff41;
-    border-radius: 4px;
-    margin-bottom: 16px;
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.9);
-    position: relative;
+    border: none; /* No separate border since it's inside the panel */
+    border-bottom: 2px solid #00ff41; /* Separator from dropdown below */
+    border-radius: 0;
+    margin-bottom: 0; /* No gap between waveform and dropdown */
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 255, 65, 0.15);
+    position: relative; /* Default position */
     overflow: hidden;
+}
+
+/* Make waveform sticky only when OSC panel is open */
+#osc-panel[open] ~ #music-controls-always-visible #waveform-container,
+.music-player-panel:has(#osc-panel[open]) #waveform-container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 #waveform {

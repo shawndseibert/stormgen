@@ -13,105 +13,22 @@
             <div id="weather-icon" class="weather-icon">☀️</div>
         </div>
         
-        <!-- Waveform Visualizer -->
-        <div id="waveform-container">
-            <span class="waveform-label">AUDIO WAVEFORM</span>
-            <canvas id="waveform"></canvas>
-        </div>
-        
-        <!-- OSC (Oscilloscope) Controls (directly under waveform) -->
-        <details class="standalone-panel">
-            <summary>OSC (Oscilloscope)</summary>
-            <div id="osc-controls">
-                <!-- Waveform Display Mode -->
-                <label>Display Mode</label>
-                <div class="osc-mode-buttons">
-                    <button class="osc-mode-btn active" data-mode="waveform">Waveform</button>
-                    <button class="osc-mode-btn" data-mode="bars">Bars</button>
-                    <button class="osc-mode-btn" data-mode="circular">Circular</button>
-                </div>
-                
-                <!-- Line Width -->
-                <label for="oscLineWidth">Line Width
-                    <input type="range" id="oscLineWidth" min="1" max="10" step="0.5" value="2">
-                    <span id="oscLineWidthLabel">2</span>
-                </label>
-                
-                <!-- Glow/Shadow Blur -->
-                <label for="oscGlowIntensity">Glow Intensity
-                    <input type="range" id="oscGlowIntensity" min="0" max="30" step="1" value="10">
-                    <span id="oscGlowIntensityLabel">10</span>
-                </label>
-                
-                <!-- Amplification -->
-                <label for="oscAmplification">Amplification
-                    <input type="range" id="oscAmplification" min="0.5" max="5" step="0.1" value="1">
-                    <span id="oscAmplificationLabel">1.0x</span>
-                </label>
-                
-                <!-- Smoothing -->
-                <label for="oscSmoothing">Smoothing
-                    <input type="range" id="oscSmoothing" min="0" max="0.99" step="0.01" value="0.8">
-                    <span id="oscSmoothingLabel">0.80</span>
-                </label>
-                
-                <!-- FFT Size -->
-                <label for="oscFFTSize">Resolution (FFT)
-                    <input type="range" id="oscFFTSize" min="5" max="13" step="1" value="11">
-                    <span id="oscFFTSizeLabel">2048</span>
-                </label>
-                
-                <!-- Color Picker -->
-                <label for="oscColor">Waveform Color
-                    <input type="color" id="oscColor" value="#00ff41">
-                </label>
-                
-                <!-- Background Color -->
-                <label for="oscBgColor">Background Color
-                    <input type="color" id="oscBgColor" value="#000a05">
-                </label>
-                
-                <!-- Fade Trail Effect -->
-                <label for="oscFadeTrail">Trail Effect
-                    <input type="range" id="oscFadeTrail" min="0" max="1" step="0.05" value="0">
-                    <span id="oscFadeTrailLabel">Off</span>
-                </label>
-                
-                <!-- Mirror Effect -->
-                <label>
-                    <input type="checkbox" id="oscMirror">
-                    Mirror Effect
-                </label>
-                
-                <!-- Fill Under Wave -->
-                <label>
-                    <input type="checkbox" id="oscFill">
-                    Fill Under Wave
-                </label>
-                
-                <!-- Dots Mode -->
-                <label>
-                    <input type="checkbox" id="oscDots">
-                    Dots Mode
-                </label>
-                
-                <!-- Rainbow Mode -->
-                <label>
-                    <input type="checkbox" id="oscRainbow">
-                    Rainbow Color Mode
-                </label>
-            </div>
-        </details>
-        
         <!-- Music Playback Controls -->
         <div class="music-player-wrapper">
-            <details class="standalone-panel music-player-panel" open>
-                <summary>
-                    <span class="summary-track-info">
-                        <span id="summary-track-name">No track loaded</span>
-                    </span>
-                </summary>
-                <div id="music-playback-section">
+            <div class="standalone-panel music-player-panel">
+                <!-- Waveform Visualizer (always visible, inside panel border) -->
+                <div id="waveform-container">
+                    <span class="waveform-label">AUDIO WAVEFORM</span>
+                    <canvas id="waveform"></canvas>
+                </div>
+                
+                <details>
+                    <summary>
+                        <span class="summary-track-info">
+                            <span id="summary-track-name">No track loaded</span>
+                        </span>
+                    </summary>
+                    <div id="music-playback-section">
                     <!-- Collapsible content (track display and volume) -->
                     <div class="music-expanded-content">
                         <div id="track-display-container">
@@ -125,18 +42,178 @@
                             </div>
                         </div>
                         
-                        <!-- Music Volume Slider -->
-                        <div id="playback-volume-section">
-                            <label for="playbackMusicVolume">Music Volume
-                                <input type="range" id="playbackMusicVolume" min="0" max="100" value="100">
-                                <span id="playbackMusicVolumeLabel">100</span>
-                            </label>
-                        </div>
+                        <!-- Audio Effects & EQ (nested dropdown) -->
+                        <details class="nested-panel">
+                            <summary>Audio Effects & EQ</summary>
+                            <div id="audio-effects-controls">
+                                <!-- Music Volume Slider -->
+                                <label for="musicVolume">Music Volume
+                                    <input type="range" id="musicVolume" min="0" max="100" value="100">
+                                    <span id="musicVolumeLabel">100</span>
+                                </label>
+                                
+                                <label for="musicReverb">Music Reverb Mix
+                                    <input type="range" id="musicReverb" min="0" max="1" step="0.01" value="0.3">
+                                    <span id="musicReverbLabel">0.3</span>
+                                </label>
+                                
+                                <label for="musicLowpass">Music Lowpass Filter
+                                    <input type="range" id="musicLowpass" min="420" max="22050" step="1" value="22050">
+                                    <span id="musicLowpassLabel">22050 Hz</span>
+                                </label>
+                                <label for="musicRoomSize">Room Size
+                                    <input type="range" id="musicRoomSize" min="0.01" max="2" step="0.01" value="0.02">
+                                    <span id="musicRoomSizeLabel">0.02</span>
+                                </label>
+                                
+                                <!-- Radio EQ Presets -->
+                                <div id="radio-eq-presets">
+                                    <label>Radio Presets</label>
+                                    <div class="radio-preset-buttons">
+                                        <button class="radio-preset-btn" data-preset="modern">Modern</button>
+                                        <button class="radio-preset-btn" data-preset="vintage">Vintage Radio</button>
+                                        <button class="radio-preset-btn" data-preset="am">AM Radio</button>
+                                        <button class="radio-preset-btn" data-preset="gramophone">Gramophone</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Radio EQ Controls -->
+                                <div id="radio-eq-controls">
+                                    <label for="eqBass">Bass
+                                        <input type="range" id="eqBass" min="-12" max="12" step="0.5" value="0">
+                                        <span id="eqBassLabel">0 dB</span>
+                                    </label>
+                                    <label for="eqMidBass">Mid-Bass
+                                        <input type="range" id="eqMidBass" min="-12" max="12" step="0.5" value="0">
+                                        <span id="eqMidBassLabel">0 dB</span>
+                                    </label>
+                                    <label for="eqMid">Mid
+                                        <input type="range" id="eqMid" min="-12" max="12" step="0.5" value="0">
+                                        <span id="eqMidLabel">0 dB</span>
+                                    </label>
+                                    <label for="eqMidTreble">Mid-Treble
+                                        <input type="range" id="eqMidTreble" min="-12" max="12" step="0.5" value="0">
+                                        <span id="eqMidTrebleLabel">0 dB</span>
+                                    </label>
+                                    <label for="eqTreble">Treble
+                                        <input type="range" id="eqTreble" min="-12" max="12" step="0.5" value="0">
+                                        <span id="eqTrebleLabel">0 dB</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </details>
+                        
+                        <!-- OSC Controls (nested dropdown) -->
+                        <details class="nested-panel" id="osc-panel">
+                            <summary>OSC (Oscilloscope)</summary>
+                            <div id="osc-controls">
+                                <!-- Waveform Display Mode -->
+                                <label>Display Mode</label>
+                                <div class="osc-mode-buttons">
+                                    <button class="osc-mode-btn active" data-mode="waveform">Waveform</button>
+                                    <button class="osc-mode-btn" data-mode="bars">Bars</button>
+                                    <button class="osc-mode-btn" data-mode="circular">Circular</button>
+                                </div>
+                                
+                                <!-- Line Width -->
+                                <label for="oscLineWidth">Line Width
+                                    <input type="range" id="oscLineWidth" min="1" max="10" step="0.5" value="2">
+                                    <span id="oscLineWidthLabel">2</span>
+                                </label>
+                                
+                                <!-- Glow/Shadow Blur -->
+                                <label for="oscGlowIntensity">Glow Intensity
+                                    <input type="range" id="oscGlowIntensity" min="0" max="30" step="1" value="10">
+                                    <span id="oscGlowIntensityLabel">10</span>
+                                </label>
+                                
+                                <!-- Amplification -->
+                                <label for="oscAmplification">Amplification
+                                    <input type="range" id="oscAmplification" min="0.5" max="5" step="0.1" value="1">
+                                    <span id="oscAmplificationLabel">1.0x</span>
+                                </label>
+                                
+                                <!-- Smoothing -->
+                                <label for="oscSmoothing">Smoothing
+                                    <input type="range" id="oscSmoothing" min="0" max="0.99" step="0.01" value="0.8">
+                                    <span id="oscSmoothingLabel">0.80</span>
+                                </label>
+                                
+                                <!-- FFT Size -->
+                                <label for="oscFFTSize">Resolution (FFT)
+                                    <input type="range" id="oscFFTSize" min="5" max="13" step="1" value="11">
+                                    <span id="oscFFTSizeLabel">2048</span>
+                                </label>
+                                
+                                <!-- Color Picker -->
+                                <label for="oscColor">Waveform Color
+                                    <input type="color" id="oscColor" value="#00ff41">
+                                </label>
+                                
+                                <!-- Background Color -->
+                                <label for="oscBgColor">Background Color
+                                    <input type="color" id="oscBgColor" value="#000a05">
+                                </label>
+                                
+                                <!-- Fade Trail Effect -->
+                                <label for="oscFadeTrail">Trail Effect
+                                    <input type="range" id="oscFadeTrail" min="0" max="1" step="0.05" value="0">
+                                    <span id="oscFadeTrailLabel">Off</span>
+                                </label>
+                                
+                                <!-- Mirror Effect -->
+                                <label>
+                                    <input type="checkbox" id="oscMirror">
+                                    Mirror Effect
+                                </label>
+                                
+                                <!-- Fill Under Wave -->
+                                <label>
+                                    <input type="checkbox" id="oscFill">
+                                    Fill Under Wave
+                                </label>
+                                
+                                <!-- Dots Mode -->
+                                <label>
+                                    <input type="checkbox" id="oscDots">
+                                    Dots Mode
+                                </label>
+                                
+                                <!-- Rainbow Mode -->
+                                <label>
+                                    <input type="checkbox" id="oscRainbow">
+                                    Rainbow Color Mode
+                                </label>
+                            </div>
+                        </details>
+                        
+                        <!-- Music Playlist (nested dropdown) -->
+                        <details class="nested-panel">
+                            <summary>Music Playlist</summary>
+                            <div id="playlist-section">
+                                <div id="playlist-upload">
+                                    <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
+                                    <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
+                                    <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
+                                </div>
+                                <div id="playlist-container">
+                                    <div id="playlist-items"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Crossfade Control -->
+                            <div id="crossfade-section">
+                                <label for="crossfadeDuration">Crossfade Duration
+                                    <input type="range" id="crossfadeDuration" min="0" max="60" step="0.5" value="25">
+                                    <span id="crossfadeDurationLabel">25.0s</span>
+                                </label>
+                            </div>
+                        </details>
                     </div>
                 </div>
             </details>
             
-            <!-- Always visible controls (outside details but inside wrapper) -->
+            <!-- Always visible controls (inside panel border) -->
             <div id="music-controls-always-visible">
                 <!-- Playback Controls -->
                 <div id="music-controls-row">
@@ -155,98 +232,10 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Music Playlist (directly under playback section) -->
-        <details class="standalone-panel">
-            <summary>Music Playlist</summary>
-            <div id="music-controls">
-                <!-- Playlist Management -->
-                <div id="playlist-section">
-                    <div id="playlist-upload">
-                        <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
-                        <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
-                        <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
-                    </div>
-                    <div id="playlist-container">
-                        <div id="playlist-items"></div>
-                    </div>
-                </div>
-                
-                <!-- Crossfade Control -->
-                <div id="crossfade-section">
-                    <label for="crossfadeDuration">Crossfade Duration
-                        <input type="range" id="crossfadeDuration" min="0" max="60" step="0.5" value="25">
-                        <span id="crossfadeDurationLabel">25.0s</span>
-                    </label>
-                </div>
-            </div>
-        </details>
+            </div> <!-- End standalone-panel -->
+        </div> <!-- End music-player-wrapper -->
         
         <div class="controls">
-            
-            <details>
-                <summary>Audio Effects & EQ</summary>
-                <div id="audio-effects-controls">
-                    <!-- Music Volume and Effects Controls -->
-                    <label for="musicVolume">Music Volume
-                        <input type="range" id="musicVolume" min="0" max="100" value="100">
-                    </label>
-                    <label for="musicLowpass">Music Lowpass Filter
-                        <input type="range" id="musicLowpass" min="420" max="22050" step="1" value="22050">
-                        <span id="musicLowpassLabel">22050 Hz</span>
-                    </label>
-                    <label for="musicRoomSize">Room Size
-                        <input type="range" id="musicRoomSize" min="0.01" max="2" step="0.01" value="0.02">
-                        <span id="musicRoomSizeLabel">0.02</span>
-                    </label>
-                    <label for="musicReverb">Music Reverb Mix
-                        <input type="range" id="musicReverb" min="0" max="1" step="0.01" value="0.3">
-                        <span id="musicReverbLabel">0.3</span>
-                    </label>
-                    
-                    <!-- Radio EQ Presets -->
-                    <div id="radio-eq-presets">
-                        <label>Radio Presets</label>
-                        <div class="radio-preset-buttons">
-                            <button class="radio-preset-btn" data-preset="modern">Modern</button>
-                            <button class="radio-preset-btn" data-preset="vintage">Vintage Radio</button>
-                            <button class="radio-preset-btn" data-preset="am">AM Radio</button>
-                            <button class="radio-preset-btn" data-preset="gramophone">Gramophone</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Radio EQ Controls -->
-                    <div id="radio-eq-controls">
-                        <label for="eqBass">Bass
-                            <input type="range" id="eqBass" min="-12" max="12" step="0.5" value="0">
-                            <span id="eqBassLabel">0 dB</span>
-                        </label>
-                        <label for="eqMidBass">Mid-Bass
-                            <input type="range" id="eqMidBass" min="-12" max="12" step="0.5" value="0">
-                            <span id="eqMidBassLabel">0 dB</span>
-                        </label>
-                        <label for="eqMid">Mid
-                            <input type="range" id="eqMid" min="-12" max="12" step="0.5" value="0">
-                            <span id="eqMidLabel">0 dB</span>
-                        </label>
-                        <label for="eqMidTreble">Mid-Treble
-                            <input type="range" id="eqMidTreble" min="-12" max="12" step="0.5" value="0">
-                            <span id="eqMidTrebleLabel">0 dB</span>
-                        </label>
-                        <label for="eqTreble">Treble
-                            <input type="range" id="eqTreble" min="-12" max="12" step="0.5" value="0">
-                            <span id="eqTrebleLabel">0 dB</span>
-                        </label>
-                    </div>
-                    
-                    <!-- Global Audio Filter -->
-                    <label>Global Lowpass Filter
-                        <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
-                        <span id="lowpassLabel">22050 Hz</span>
-                    </label>
-                </div>
-            </details>
             
             <details>
                 <summary>Storm Environment</summary>
@@ -254,9 +243,24 @@
                     <!-- Storm Presets -->
                     <div class="preset-buttons">
                         <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
-                        <button class="preset-btn" id="presetIndoor">🛋️ Indoor</button>
                         <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
                     </div>
+                    
+                    <!-- Custom Preset Management -->
+                    <div id="custom-preset-section" style="margin-top: 12px;">
+                        <label>Custom Presets</label>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <input type="text" id="customPresetName" placeholder="Preset name..." style="flex: 1; padding: 6px; background: rgba(0, 20, 10, 0.8); border: 1px solid #00ff41; color: #00ff41; border-radius: 4px; font-family: 'Share Tech Mono', monospace;">
+                            <button id="savePresetBtn" class="preset-btn" style="flex-shrink: 0;">💾 Save</button>
+                        </div>
+                        <div id="customPresetsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
+                    </div>
+                    
+                    <!-- Global Audio Filter -->
+                    <label style="margin-top: 12px;">Global Lowpass Filter
+                        <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
+                        <span id="lowpassLabel">22050 Hz</span>
+                    </label>
                     
                     <!-- Rain Options -->
                     <label style="margin-top: 12px;">Rain Volume

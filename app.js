@@ -290,7 +290,20 @@ function applyPreset(presetName) {
         audioCtx.resume();
     }
     
-    if (presetName === 'indoorcozy') {
+    // Check if it's a custom preset
+    const customPresets = JSON.parse(localStorage.getItem('customPresets') || '{}');
+    if (customPresets[presetName]) {
+        const preset = customPresets[presetName];
+        rainVolumeSlider.value = preset.rainVolume;
+        thunderVolumeSlider.value = preset.thunderVolume;
+        lowpassFilterSlider.value = preset.lowpassFilter;
+        musicVolumeSlider.value = preset.musicVolume;
+        musicLowpassSlider.value = preset.musicLowpass;
+        musicRoomSizeSlider.value = preset.musicRoomSize;
+        musicReverbSlider.value = preset.musicReverb;
+        rainReverbSlider.value = preset.rainReverb;
+        thunderReverbSlider.value = preset.thunderReverb;
+    } else if (presetName === 'indoorcozy') {
         // Indoor Cozy: 100% rain, heavy filtering, tiny room with reverb
         rainVolumeSlider.value = 1;
         thunderVolumeSlider.value = 1;
@@ -298,25 +311,11 @@ function applyPreset(presetName) {
         musicVolumeSlider.value = 100;
         musicLowpassSlider.value = 22050; // Max - no filtering on music
         musicRoomSizeSlider.value = 0.02; // Very small room
-        musicReverbSlider.value = 0.80; // Higher reverb mix
+        musicReverbSlider.value = 0.30; // Updated reverb mix
         rainReverbSlider.value = 0.50; // Rain reverb for indoor space
         thunderReverbSlider.value = 0.30; // Thunder reverb for indoor space
         
         // Do NOT auto-play music for Indoor Cozy preset
-        
-    } else if (presetName === 'indoor') {
-        // Indoor: 100% rain, heavy filtering, medium reverb
-        rainVolumeSlider.value = 1;
-        thunderVolumeSlider.value = 1;
-        lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
-        musicVolumeSlider.value = 100;
-        musicLowpassSlider.value = 22050; // Max - no filtering on music
-        musicRoomSizeSlider.value = 0.02; // Very small room
-        musicReverbSlider.value = 0.60; // Higher reverb mix
-        rainReverbSlider.value = 0.50; // Rain reverb for indoor space
-        thunderReverbSlider.value = 0.60; // Thunder reverb for indoor space
-        
-        // Do NOT auto-play music for Indoor preset
         
     } else if (presetName === 'outdoor') {
         // Outdoor: 50% rain, open sound, no reverb
@@ -1626,18 +1625,85 @@ window.addEventListener('DOMContentLoaded', async () => {
     
     // ===== WEATHER PRESET BUTTONS =====
     const presetIndoorCozyBtn = document.getElementById('presetIndoorCozy');
-    const presetIndoorBtn = document.getElementById('presetIndoor');
     const presetOutdoorBtn = document.getElementById('presetOutdoor');
     
     if (presetIndoorCozyBtn) {
         presetIndoorCozyBtn.addEventListener('click', () => applyPreset('indoorcozy'));
     }
-    if (presetIndoorBtn) {
-        presetIndoorBtn.addEventListener('click', () => applyPreset('indoor'));
-    }
     if (presetOutdoorBtn) {
         presetOutdoorBtn.addEventListener('click', () => applyPreset('outdoor'));
     }
+    
+    // ===== CUSTOM PRESET MANAGEMENT =====
+    const savePresetBtn = document.getElementById('savePresetBtn');
+    const customPresetNameInput = document.getElementById('customPresetName');
+    const customPresetsContainer = document.getElementById('customPresetsContainer');
+    
+    function loadCustomPresets() {
+        const customPresets = JSON.parse(localStorage.getItem('customPresets') || '{}');
+        customPresetsContainer.innerHTML = '';
+        
+        Object.keys(customPresets).forEach(name => {
+            const btn = document.createElement('button');
+            btn.className = 'preset-btn';
+            btn.textContent = name;
+            btn.style.position = 'relative';
+            btn.style.paddingRight = '30px';
+            
+            const deleteBtn = document.createElement('span');
+            deleteBtn.textContent = '✕';
+            deleteBtn.style.position = 'absolute';
+            deleteBtn.style.right = '8px';
+            deleteBtn.style.top = '50%';
+            deleteBtn.style.transform = 'translateY(-50%)';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.color = '#ff4444';
+            
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const presets = JSON.parse(localStorage.getItem('customPresets') || '{}');
+                delete presets[name];
+                localStorage.setItem('customPresets', JSON.stringify(presets));
+                loadCustomPresets();
+            });
+            
+            btn.appendChild(deleteBtn);
+            btn.addEventListener('click', () => applyPreset(name));
+            customPresetsContainer.appendChild(btn);
+        });
+    }
+    
+    if (savePresetBtn && customPresetNameInput) {
+        savePresetBtn.addEventListener('click', () => {
+            const name = customPresetNameInput.value.trim();
+            if (!name) {
+                alert('Please enter a preset name');
+                return;
+            }
+            
+            const preset = {
+                rainVolume: parseFloat(document.getElementById('rainVolume').value),
+                thunderVolume: parseFloat(document.getElementById('thunderVolume').value),
+                lowpassFilter: parseFloat(document.getElementById('lowpassFilter').value),
+                musicVolume: parseFloat(document.getElementById('musicVolume').value),
+                musicLowpass: parseFloat(document.getElementById('musicLowpass').value),
+                musicRoomSize: parseFloat(document.getElementById('musicRoomSize').value),
+                musicReverb: parseFloat(document.getElementById('musicReverb').value),
+                rainReverb: parseFloat(document.getElementById('rainReverb').value),
+                thunderReverb: parseFloat(document.getElementById('thunderReverb').value)
+            };
+            
+            const customPresets = JSON.parse(localStorage.getItem('customPresets') || '{}');
+            customPresets[name] = preset;
+            localStorage.setItem('customPresets', JSON.stringify(customPresets));
+            
+            customPresetNameInput.value = '';
+            loadCustomPresets();
+        });
+    }
+    
+    // Load custom presets on startup
+    loadCustomPresets();
     
     // ===== RAIN VOLUME =====
     
