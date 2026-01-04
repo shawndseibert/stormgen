@@ -1,3 +1,30 @@
+// ==================== IMMEDIATE THEME INITIALIZATION ====================
+// Load theme colors IMMEDIATELY (before DOMContentLoaded) to prevent flash
+(function() {
+    const savedColor = localStorage.getItem('stormgen-theme-color');
+    const savedColorRgb = localStorage.getItem('stormgen-theme-color-rgb');
+    const savedSecondary = localStorage.getItem('stormgen-secondary-color');
+    const savedSecondaryRgb = localStorage.getItem('stormgen-secondary-color-rgb');
+    
+    if (savedColor && savedColorRgb) {
+        document.documentElement.style.setProperty('--theme-color', savedColor);
+        document.documentElement.style.setProperty('--theme-color-rgb', savedColorRgb);
+    } else {
+        // Set default bright green for structural elements
+        document.documentElement.style.setProperty('--theme-color', '#00ff41');
+        document.documentElement.style.setProperty('--theme-color-rgb', '0, 255, 65');
+    }
+    
+    if (savedSecondary && savedSecondaryRgb) {
+        document.documentElement.style.setProperty('--secondary-accent', savedSecondary);
+        document.documentElement.style.setProperty('--secondary-accent-rgb', savedSecondaryRgb);
+    } else {
+        // Set lighter yellow-green for UI elements for better balance
+        document.documentElement.style.setProperty('--secondary-accent', '#88ff66');
+        document.documentElement.style.setProperty('--secondary-accent-rgb', '136, 255, 102');
+    }
+})();
+
 // ==================== AUDIO SETUP ====================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -221,7 +248,7 @@ function updateWeatherIcon() {
     
     // If storm is not playing, always show sun icon
     if (!isPlaying) {
-        weatherIcon.textContent = '☀️'; // Sunny - no storm
+        weatherIcon.textContent = '🔆'; // Sunny - no storm
         return;
     }
     
@@ -229,23 +256,20 @@ function updateWeatherIcon() {
     
     // Determine icon based on rain volume when storm is active
     if (rainVolume === 0) {
-        weatherIcon.textContent = '☀️'; // Sunny - no rain
-    } else if (rainVolume < 0.3) {
-        weatherIcon.textContent = '⛅'; // Partly cloudy - light rain
-    } else if (rainVolume < 0.7) {
-        weatherIcon.textContent = '🌧️'; // Rain cloud - moderate rain
+        weatherIcon.textContent = '🔆'; // Sunny - no rain
     } else {
-        weatherIcon.textContent = '🌧️'; // Rain cloud - heavy rain (still just rain, no lightning)
+        weatherIcon.textContent = '🌧️'; // Cloud with rain (no lightning)
     }
 }
 
 function showLightningIcon() {
     if (!weatherIcon) return;
     
-    // Show thunder/lightning icon when thunder strikes
-    weatherIcon.textContent = '⛈️'; // Thunder cloud with lightning
+    // Show lightning bolt overlay on cloud
+    const originalIcon = weatherIcon.textContent;
+    weatherIcon.textContent = '⛈️'; // Rain cloud with lightning
     
-    // Add lightning animation class
+    // Add lightning animation class (inverts colors)
     weatherIcon.classList.add('lightning');
     
     // Remove after animation completes and fade back to current rain level icon
@@ -253,6 +277,27 @@ function showLightningIcon() {
         weatherIcon.classList.remove('lightning');
         updateWeatherIcon(); // Return to appropriate rain/cloud icon (no lightning)
     }, 300);
+}
+
+// ==================== SLIDER FILL UPDATE ====================
+function updateSliderFill(slider) {
+    if (!slider) return;
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const value = parseFloat(slider.value) || 0;
+    const percent = ((value - min) / (max - min)) * 100;
+    slider.style.setProperty('--slider-percent', `${percent}%`);
+}
+
+function initializeAllSliderFills() {
+    // Get all range inputs
+    const sliders = document.querySelectorAll('input[type="range"]');
+    sliders.forEach(slider => {
+        // Initialize fill
+        updateSliderFill(slider);
+        // Update on input
+        slider.addEventListener('input', () => updateSliderFill(slider));
+    });
 }
 
 function createImpulseResponse(duration, decay) {
@@ -1363,6 +1408,8 @@ function updateTrackPosition() {
     if (positionSlider && !positionSlider.dataset.seeking) {
         const percentage = (activeAudio.currentTime / activeAudio.duration) * 100;
         positionSlider.value = percentage;
+        // Update fill visual
+        positionSlider.style.setProperty('--track-percent', `${percentage}%`);
     }
     
     if (currentTimeDisplay) {
@@ -1475,9 +1522,9 @@ function startStorm(fromPreset = false) {
     
     const rainVolumeSlider = document.getElementById('rainVolume');
     
-    // Only set rain volume to 50% on very first manual start (not from preset)
+    // On very first manual start, apply Indoor Cozy preset as default
     if (!fromPreset && !hasStartedStormBefore) {
-        rainVolumeSlider.value = 0.5;
+        applyPreset('indoorcozy');
         hasStartedStormBefore = true; // Mark that storm has been started
     }
     
@@ -1617,7 +1664,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Update all labels to match Outdoor preset
     document.getElementById('lowpassLabel').textContent = '22050 Hz';
     document.getElementById('musicLowpassLabel').textContent = '22050 Hz';
-    document.getElementById('musicRoomSizeLabel').textContent = '0.02';
+    document.getElementById('musicRoomSizeLabel').textContent = '0.020';
     document.getElementById('musicReverbLabel').textContent = '0.00';
     document.getElementById('rainReverbLabel').textContent = '0.00';
     document.getElementById('thunderReverbLabel').textContent = '0.00';
@@ -2069,7 +2116,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         musicReverbNode.buffer = createImpulseResponse(2, decay);
         rainReverbNode.buffer = createImpulseResponse(2, decay);
         thunderReverbNode.buffer = createImpulseResponse(2, decay);
-        musicRoomSizeLabel.textContent = sliderValue.toFixed(2);
+        musicRoomSizeLabel.textContent = sliderValue.toFixed(3);
     });
     
     const stormIcon = weatherIcon; // Use weather icon for click interaction
@@ -2266,6 +2313,141 @@ window.addEventListener('DOMContentLoaded', async () => {
             oscSettings.rainbow = oscRainbowCheckbox.checked;
         });
     }
+    
+    // Initialize all slider fills
+    initializeAllSliderFills();
+});
+
+// Function to sync waveform color with CSS theme color
+function syncWaveformColorWithTheme() {
+    const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-accent').trim();
+    if (secondaryColor && !oscSettings.rainbow) {
+        oscSettings.color = secondaryColor;
+        // Update color picker if it exists
+        const oscColorPicker = document.getElementById('oscColor');
+        if (oscColorPicker) {
+            oscColorPicker.value = secondaryColor;
+        }
+    }
+}
+
+// Function to convert hex color to RGB values
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+// Function to update theme color throughout the app
+function updateThemeColor(color) {
+    const rgb = hexToRgb(color);
+    if (!rgb) return;
+    
+    // Update CSS variables
+    document.documentElement.style.setProperty('--theme-color', color);
+    document.documentElement.style.setProperty('--theme-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    
+    // Save to localStorage
+    localStorage.setItem('stormgen-theme-color', color);
+    localStorage.setItem('stormgen-theme-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+}
+
+// Function to update secondary accent color
+function updateSecondaryColor(color) {
+    const rgb = hexToRgb(color);
+    if (!rgb) return;
+    
+    // Update CSS variables
+    document.documentElement.style.setProperty('--secondary-accent', color);
+    document.documentElement.style.setProperty('--secondary-accent-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    
+    // Save to localStorage
+    localStorage.setItem('stormgen-secondary-color', color);
+    localStorage.setItem('stormgen-secondary-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    
+    // Update waveform color (waveform now uses secondary color)
+    syncWaveformColorWithTheme();
+}
+
+// Function to update glow intensity
+function updateGlowIntensity(intensity) {
+    // Update CSS variable
+    document.documentElement.style.setProperty('--glow-intensity', intensity);
+    
+    // Save to localStorage
+    localStorage.setItem('stormgen-glow-intensity', intensity);
+}
+
+// Initialize theme color pickers
+window.addEventListener('DOMContentLoaded', () => {
+    const themeColorPicker = document.getElementById('theme-color-picker');
+    const secondaryColorPicker = document.getElementById('secondary-color-picker');
+    const glowIntensitySlider = document.getElementById('glow-intensity');
+    
+    // Load saved theme colors and set picker values
+    const savedColor = localStorage.getItem('stormgen-theme-color');
+    const savedColorRgb = localStorage.getItem('stormgen-theme-color-rgb');
+    const savedSecondary = localStorage.getItem('stormgen-secondary-color');
+    const savedSecondaryRgb = localStorage.getItem('stormgen-secondary-color-rgb');
+    const savedGlowIntensity = localStorage.getItem('stormgen-glow-intensity');
+    
+    if (savedColor && savedColorRgb) {
+        document.documentElement.style.setProperty('--theme-color', savedColor);
+        document.documentElement.style.setProperty('--theme-color-rgb', savedColorRgb);
+        if (themeColorPicker) {
+            themeColorPicker.value = savedColor;
+        }
+    } else if (themeColorPicker) {
+        // Set default value if no saved color
+        themeColorPicker.value = '#00ff41';
+    }
+    
+    if (savedSecondary && savedSecondaryRgb) {
+        document.documentElement.style.setProperty('--secondary-accent', savedSecondary);
+        document.documentElement.style.setProperty('--secondary-accent-rgb', savedSecondaryRgb);
+        if (secondaryColorPicker) {
+            secondaryColorPicker.value = savedSecondary;
+        }
+    } else if (secondaryColorPicker) {
+        // Set default value if no saved color
+        secondaryColorPicker.value = '#88ff66';
+    }
+    
+    // Load saved glow intensity
+    if (savedGlowIntensity) {
+        document.documentElement.style.setProperty('--glow-intensity', savedGlowIntensity);
+        if (glowIntensitySlider) {
+            glowIntensitySlider.value = savedGlowIntensity;
+        }
+    }
+    
+    // Live update as user changes colors
+    if (themeColorPicker) {
+        themeColorPicker.addEventListener('input', (e) => {
+            updateThemeColor(e.target.value);
+        });
+    }
+    
+    if (secondaryColorPicker) {
+        secondaryColorPicker.addEventListener('input', (e) => {
+            updateSecondaryColor(e.target.value);
+        });
+    }
+    
+    // Live update as user changes glow intensity
+    if (glowIntensitySlider) {
+        glowIntensitySlider.addEventListener('input', (e) => {
+            updateGlowIntensity(e.target.value);
+        });
+    }
+});
+
+// Call on page load to ensure waveform matches theme
+window.addEventListener('load', () => {
+    syncWaveformColorWithTheme();
 });
 
 // ==================== WAVEFORM VISUALIZER ====================
@@ -2280,8 +2462,8 @@ let oscSettings = {
     amplification: 1,
     smoothing: 0.8,
     fftSize: 2048,
-    color: '#00ff41',
-    bgColor: '#000a05',
+    color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-accent').trim(),
+    bgColor: 'transparent',
     fadeTrail: 0,
     mirror: false,
     fill: false,
@@ -2307,12 +2489,22 @@ function drawWaveform() {
     
     // Background with optional fade trail effect
     if (oscSettings.fadeTrail > 0) {
-        canvasCtx.fillStyle = `rgba(0, 10, 5, ${1 - oscSettings.fadeTrail})`;
+        canvasCtx.fillStyle = `rgba(0, 0, 0, ${1 - oscSettings.fadeTrail})`;
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
-        const bgColor = hexToRgb(oscSettings.bgColor);
-        canvasCtx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
+        // Use transparent or black background
+        if (oscSettings.bgColor === 'transparent') {
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        } else {
+            const bgColor = hexToRgb(oscSettings.bgColor);
+            if (bgColor) {
+                canvasCtx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+            } else {
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
     }
-    canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw based on selected mode
     if (oscSettings.mode === 'waveform') {

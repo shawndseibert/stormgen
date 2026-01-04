@@ -4,6 +4,39 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
+/* ============================================
+   COLOR THEME VARIABLES
+   ============================================ */
+:root {
+    --theme-color: #888888;
+    --theme-color-rgb: 136, 136, 136;
+    --secondary-accent: #aaaaaa;
+    --secondary-accent-rgb: 170, 170, 170;
+    --glow-intensity: 0;
+}
+
+/* You can change the theme colors by modifying these variables:
+   Primary Color Examples:
+   - Green (default): #00ff41 / 0, 255, 65
+   - Blue: #00d4ff / 0, 212, 255
+   - Purple: #8b5cf6 / 139, 92, 246
+   - Cyan: #22d3ee / 34, 211, 238
+   - Orange: #ff8800 / 255, 136, 0
+   - Pink: #ff0080 / 255, 0, 128
+   
+   Secondary Accent Color Examples:
+   - Yellow (default): #ffeb3b / 255, 235, 59
+   - Light Blue: #66d9ff / 102, 217, 255
+   - Light Green: #66ff99 / 102, 255, 153
+   - Gold: #ffd700 / 255, 215, 0
+   - Peach: #ffb380 / 255, 179, 128
+   
+   Glow Intensity:
+   - Controls all glow/shadow effects throughout the UI
+   - Range: 0 (off) to 2 (maximum)
+   - Default: 1 (normal)
+*/
+
 /* Preset buttons styling */
 .preset-buttons {
     display: flex;
@@ -17,14 +50,14 @@
     padding: 12px 8px;
     font-size: 0.85em;
     font-weight: 700;
-    background: rgba(0, 255, 65, 0.15);
-    color: #00ff41;
-    border: 2px solid #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.15);
+    color: var(--secondary-accent);
+    border: 2px solid var(--secondary-accent);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
-    text-shadow: 0 0 5px #00ff41;
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3), inset 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.1);
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
     display: flex;
@@ -33,33 +66,33 @@
     gap: 6px;
 }
 
-/* Convert preset button emojis to Pip-Boy green style */
+/* Style preset button emojis to match theme */
 .preset-btn::before {
-    filter: brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(70deg);
+    filter: none;
 }
 
 .preset-btn:hover {
-    background: rgba(0, 255, 65, 0.25);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6), inset 0 0 10px rgba(0, 255, 65, 0.2);
-    text-shadow: 0 0 8px #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.25);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6), inset 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.2);
+    text-shadow: 0 0 calc(8px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 .preset-btn:active {
-    background: rgba(0, 255, 65, 0.35);
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.5), inset 0 0 15px rgba(0, 255, 65, 0.3);
+    background: rgba(var(--secondary-accent-rgb), 0.35);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.5), inset 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3);
 }
 
 .preset-btn#presetIndoorCozy,
 .preset-btn#presetIndoor,
 .preset-btn#presetOutdoor {
-    background: rgba(0, 255, 65, 0.15);
-    color: #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.15);
+    color: var(--secondary-accent);
 }
 
 .preset-btn#presetIndoorCozy:hover,
 .preset-btn#presetIndoor:hover,
 .preset-btn#presetOutdoor:hover {
-    background: rgba(0, 255, 65, 0.25);
+    background: rgba(var(--secondary-accent-rgb), 0.25);
 }
 
 .thunder-options-label {
@@ -80,11 +113,11 @@
 
 /* Music Playback Section (inside collapsible panel) */
 .music-player-wrapper {
-    background: rgba(0, 20, 10, 0.7);
-    border: 2px solid #00ff41;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--theme-color);
     border-radius: 4px;
     margin-bottom: 12px;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
     overflow: visible; /* Changed from hidden to allow sticky positioning */
 }
 
@@ -100,17 +133,17 @@
     padding-right: 30px;
     font-size: 0.9em !important;
     font-weight: 600 !important;
-    color: #00ff41 !important;
-    background: rgba(0, 30, 15, 0.7) !important;
+    color: var(--secondary-accent) !important;
+    background: rgba(0, 0, 0, 0.7) !important;
     padding: 8px 14px !important;
-    border-bottom: 2px solid rgba(0, 255, 65, 0.5) !important;
+    border-bottom: 2px solid rgba(var(--theme-color-rgb), 0.5) !important;
     cursor: pointer;
     outline: none;
     user-select: none;
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 0 4px #00ff41 !important;
+    text-shadow: 0 0 calc(4px * var(--glow-intensity)) var(--secondary-accent) !important;
 }
 
 .music-player-panel > details > summary::-webkit-details-marker {
@@ -124,9 +157,9 @@
     top: 50%;
     transform: translateY(-50%) rotate(-90deg);
     transition: transform 0.2s;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.8em;
-    text-shadow: 0 0 4px #00ff41;
+    text-shadow: 0 0 calc(4px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 .music-player-panel > details[open] > summary:after {
@@ -136,7 +169,7 @@
 .summary-track-info {
     display: inline-block;
     margin-left: 12px;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.85em;
     opacity: 1;
 }
@@ -177,13 +210,13 @@
 
 /* Styling for current and next track in summary */
 #summary-track-name .current-track-summary {
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-weight: 600;
     display: inline-block;
 }
 
 #summary-track-name .next-track-summary {
-    color: #00ff41;
+    color: var(--secondary-accent);
     opacity: 0.6;
     font-weight: 400;
     font-style: italic;
@@ -192,7 +225,7 @@
 }
 
 #summary-track-name .arrow {
-    color: #00ff41;
+    color: var(--secondary-accent);
     opacity: 0.5;
     margin: 0 4px;
     display: inline-block;
@@ -202,11 +235,11 @@
 @keyframes nextTrackPulse {
     0%, 100% {
         opacity: 0.6;
-        text-shadow: 0 0 3px #00ff41;
+        text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
     }
     50% {
         opacity: 0.9;
-        text-shadow: 0 0 8px #00ff41, 0 0 12px #00ff41;
+        text-shadow: 0 0 calc(8px * var(--glow-intensity)) var(--secondary-accent), 0 0 12px var(--secondary-accent);
     }
 }
 
@@ -221,7 +254,7 @@
 /* Always visible controls section */
 #music-controls-always-visible {
     padding: 16px 18px 16px 18px;
-    border-top: 1px solid rgba(0, 255, 65, 0.2);
+    border-top: 1px solid rgba(var(--theme-color-rgb), 0.2);
 }
 
 #music-playback-section #current-track-display {
@@ -245,11 +278,11 @@
 #next-track-display {
     padding: 8px 14px;
     background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 255, 65, 0.3);
+    border: 1px solid rgba(var(--secondary-accent-rgb), 0.3);
     border-radius: 4px;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.85em;
-    text-shadow: 0 0 3px #00ff41;
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
     box-sizing: border-box;
     display: flex;
@@ -283,7 +316,7 @@
     flex: 1 1 0;
     width: auto;
     padding: 8px 14px;
-    border: 1px solid rgba(0, 255, 65, 0.3);
+    border: 1px solid rgba(var(--theme-color-rgb), 0.3);
     opacity: 1;
 }
 
@@ -349,14 +382,14 @@
 
 @keyframes crossfadePulse {
     0%, 100% {
-        border-color: rgba(0, 255, 65, 0.5);
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-        background: rgba(0, 50, 20, 0.4);
+        border-color: rgba(var(--secondary-accent-rgb), 0.5);
+        box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3);
+        background: rgba(0, 0, 0, 0.4);
     }
     50% {
-        border-color: rgba(0, 255, 65, 0.9);
-        box-shadow: 0 0 20px rgba(0, 255, 65, 0.6), inset 0 0 15px rgba(0, 255, 65, 0.2);
-        background: rgba(0, 70, 30, 0.6);
+        border-color: rgba(var(--secondary-accent-rgb), 0.9);
+        box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6), inset 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.2);
+        background: rgba(0, 0, 0, 0.6);
     }
 }
 
@@ -367,17 +400,17 @@
 
 @keyframes trackChangeFlash {
     0% {
-        border-color: rgba(0, 255, 65, 0.3);
-        box-shadow: 0 0 5px rgba(0, 255, 65, 0.2);
+        border-color: rgba(var(--theme-color-rgb), 0.3);
+        box-shadow: 0 0 calc(5px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.2);
     }
     30% {
-        border-color: rgba(0, 255, 65, 1);
-        box-shadow: 0 0 30px rgba(0, 255, 65, 0.8), inset 0 0 20px rgba(0, 255, 65, 0.4);
+        border-color: rgba(var(--theme-color-rgb), 1);
+        box-shadow: 0 0 calc(30px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.8), inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
         transform: scale(1.02);
     }
     100% {
-        border-color: rgba(0, 255, 65, 0.3);
-        box-shadow: 0 0 5px rgba(0, 255, 65, 0.2);
+        border-color: rgba(var(--theme-color-rgb), 0.3);
+        box-shadow: 0 0 calc(5px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.2);
         transform: scale(1);
     }
 }
@@ -391,8 +424,8 @@
     flex-direction: column;
     gap: 6px;
     font-size: 0.9em;
-    color: #00ff41;
-    text-shadow: 0 0 5px #00ff41;
+    color: var(--secondary-accent);
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 #playback-volume-section input[type="range"] {
@@ -435,37 +468,37 @@
 }
 /* Modern dropdown panel styles - Pip-Boy Edition */
 .controls details {
-    background: rgba(0, 20, 10, 0.9);
+    background: rgba(0, 0, 0, 0.9);
     border-radius: 4px;
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
     margin-bottom: 12px;
-    border: 2px solid #00ff41;
+    border: 2px solid var(--theme-color);
     overflow: hidden;
     transition: box-shadow 0.2s;
 }
 
 /* Standalone panels (outside .controls) - more discreet */
 details.standalone-panel {
-    background: rgba(0, 20, 10, 0.85);
+    background: rgba(0, 0, 0, 0.85);
     border-radius: 4px;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 15px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.2), inset 0 0 15px rgba(0, 0, 0, 0.7);
     margin-bottom: 12px;
-    border: 1px solid rgba(0, 255, 65, 0.6);
+    border: 1px solid rgba(var(--theme-color-rgb), 0.6);
     overflow: hidden;
     transition: all 0.2s;
 }
 
 details.standalone-panel[open] {
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.35), inset 0 0 15px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.35), inset 0 0 15px rgba(0, 0, 0, 0.7);
 }
 
 details.standalone-panel summary {
     font-size: 0.9em;
     font-weight: 600;
-    color: #00ff41;
-    background: rgba(0, 30, 15, 0.7);
+    color: var(--secondary-accent);
+    background: rgba(0, 0, 0, 0.7);
     padding: 8px 14px;
-    border-bottom: 1px solid rgba(0, 255, 65, 0.4);
+    border-bottom: 1px solid rgba(var(--theme-color-rgb), 0.4);
     cursor: pointer;
     outline: none;
     user-select: none;
@@ -473,7 +506,7 @@ details.standalone-panel summary {
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 0 4px #00ff41;
+    text-shadow: 0 0 calc(4px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 details.standalone-panel summary::-webkit-details-marker {
@@ -487,9 +520,9 @@ details.standalone-panel summary:after {
     top: 50%;
     transform: translateY(-50%) rotate(0deg);
     transition: transform 0.2s;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.7em;
-    text-shadow: 0 0 4px #00ff41;
+    text-shadow: 0 0 calc(4px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 details.standalone-panel[open] summary:after {
@@ -502,8 +535,8 @@ details.standalone-panel > *:not(summary) {
 
 /* Nested panel inside music playback section */
 details.nested-panel {
-    background: rgba(0, 15, 7, 0.5);
-    border: 1px solid rgba(0, 255, 65, 0.3);
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(var(--secondary-accent-rgb), 0.3);
     border-radius: 4px;
     margin-top: 12px;
     overflow: hidden;
@@ -512,8 +545,8 @@ details.nested-panel {
 details.nested-panel summary {
     font-size: 0.85em;
     font-weight: 600;
-    color: #00ff41;
-    background: rgba(0, 25, 12, 0.6);
+    color: var(--secondary-accent);
+    background: rgba(0, 0, 0, 0.6);
     padding: 8px 12px;
     cursor: pointer;
     outline: none;
@@ -522,8 +555,8 @@ details.nested-panel summary {
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 0 3px #00ff41;
-    border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
+    border-bottom: 1px solid rgba(var(--theme-color-rgb), 0.2);
 }
 
 details.nested-panel summary::-webkit-details-marker {
@@ -537,9 +570,9 @@ details.nested-panel summary:after {
     top: 50%;
     transform: translateY(-50%) rotate(0deg);
     transition: transform 0.2s;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.65em;
-    text-shadow: 0 0 3px #00ff41;
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 details.nested-panel[open] summary:after {
@@ -551,15 +584,15 @@ details.nested-panel > *:not(summary) {
 }
 
 .controls details[open] {
-    box-shadow: 0 0 25px rgba(0, 255, 65, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 calc(25px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.5), inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 .controls > details > summary {
     font-size: 1em;
     font-weight: 700;
-    color: #00ff41;
-    background: rgba(0, 40, 20, 0.8);
+    color: var(--secondary-accent);
+    background: rgba(0, 0, 0, 0.8);
     padding: 10px 16px;
-    border-bottom: 1px solid #00ff41;
+    border-bottom: 1px solid var(--theme-color);
     cursor: pointer;
     outline: none;
     user-select: none;
@@ -567,7 +600,7 @@ details.nested-panel > *:not(summary) {
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
     letter-spacing: 1px;
-    text-shadow: 0 0 5px #00ff41;
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
 }
 .controls > details > summary::-webkit-details-marker {
     display: none;
@@ -579,9 +612,9 @@ details.nested-panel > *:not(summary) {
     top: 50%;
     transform: translateY(-50%) rotate(0deg);
     transition: transform 0.2s;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.8em;
-    text-shadow: 0 0 5px #00ff41;
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
 }
 .controls details[open] > summary:after {
     transform: translateY(-50%) rotate(-180deg);
@@ -602,12 +635,27 @@ details.nested-panel > *:not(summary) {
     padding: 18px 16px 16px 16px;
 }
 
+/* Settings Panel Styling */
+#settings-controls {
+    padding: 18px 16px 16px 16px;
+}
+
+#settings-controls input[type="color"] {
+    transition: all 0.2s ease;
+}
+
+#settings-controls input[type="color"]:hover {
+    border-color: rgba(var(--secondary-accent-rgb), 0.8);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.4);
+    transform: scale(1.02);
+}
+
 body {
     font-family: 'Share Tech Mono', monospace;
     background: #0a0a0a;
-    color: #00ff41;
+    color: var(--secondary-accent);
     margin: 0;
-    min-height: 100vh;
+    height: 100vh;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -658,7 +706,7 @@ body::after {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 255, 65, 0.02);
+    background: rgba(var(--theme-color-rgb), 0.02);
     pointer-events: none;
     z-index: 9998;
     animation: flicker 0.15s infinite alternate;
@@ -670,14 +718,17 @@ body::after {
 }
 
 .container {
-    max-width: 420px;
-    margin: 40px auto;
-    background: rgba(0, 20, 10, 0.95);
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.95);
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 40px rgba(0, 255, 65, 0.4), inset 0 0 30px rgba(0, 0, 0, 0.9);
-    border: 3px solid #00ff41;
+    border-radius: 0;
+    box-shadow: 0 0 calc(40px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4), inset 0 0 30px rgba(0, 0, 0, 0.9);
+    border: none;
     position: relative;
+    box-sizing: border-box;
+    overflow-y: auto;
 }
 
 .title-row {
@@ -686,21 +737,57 @@ body::after {
     margin-bottom: 16px;
     justify-content: center;
     padding: 16px 70px 16px 10px;
-    background: rgba(0, 40, 20, 0.6);
-    border: 2px solid #00ff41;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid var(--theme-color);
     border-radius: 4px;
     position: relative;
+    transition: all 0.1s ease-out;
+}
+
+/* Lightning flash effect on title bar */
+.title-row:has(.weather-icon.lightning) {
+    animation: titleBarLightningFlash 0.8s ease-out;
+}
+
+@keyframes titleBarLightningFlash {
+    0% {
+        background: rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+        border-color: var(--theme-color);
+    }
+    10% {
+        background: rgba(var(--secondary-accent-rgb), 0.9);
+        box-shadow: 0 0 calc(80px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 1), 
+                    inset 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.8);
+        border-color: var(--secondary-accent);
+    }
+    25% {
+        background: rgba(var(--secondary-accent-rgb), 0.6);
+        box-shadow: 0 0 calc(60px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8), 
+                    inset 0 0 calc(30px * var(--glow-intensity)) rgba(255, 255, 255, 0.5);
+        border-color: var(--secondary-accent);
+    }
+    50% {
+        background: rgba(var(--secondary-accent-rgb), 0.3);
+        box-shadow: 0 0 calc(40px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.5);
+        border-color: var(--secondary-accent);
+    }
+    100% {
+        background: rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+        border-color: var(--theme-color);
+    }
 }
 
 h1 {
     text-align: center;
     margin: 0;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
     letter-spacing: 2px;
     font-size: 1.5em;
-    text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+    text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px var(--secondary-accent);
     flex: 1;
     padding-right: 10px;
 }
@@ -709,12 +796,12 @@ h1 {
 #waveform-container {
     width: 100%;
     height: 80px;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(var(--secondary-accent-rgb), 0.05);
     border: none; /* No separate border since it's inside the panel */
-    border-bottom: 2px solid #00ff41; /* Separator from dropdown below */
+    border-bottom: 2px solid var(--theme-color); /* Separator from dropdown below */
     border-radius: 0;
     margin-bottom: 0; /* No gap between waveform and dropdown */
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 255, 65, 0.15);
+    box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 8px rgba(var(--secondary-accent-rgb), 0.15);
     position: relative; /* Default position */
     overflow: hidden;
 }
@@ -737,9 +824,9 @@ h1 {
     position: absolute;
     top: 4px;
     left: 8px;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.7em;
-    text-shadow: 0 0 5px #00ff41;
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
     pointer-events: none;
     z-index: 10;
@@ -757,8 +844,8 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    filter: grayscale(1) brightness(2) sepia(1) saturate(10) hue-rotate(50deg);
-    text-shadow: 0 0 10px #00ff41;
+    color: var(--secondary-accent);
+    text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
     transition: all 0.2s ease;
     cursor: pointer;
     user-select: none;
@@ -767,23 +854,8 @@ h1 {
     -ms-user-select: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
-}
-
-.weather-icon.lightning {
-    animation: lightning-flash 0.3s ease-in-out;
-    filter: grayscale(1) brightness(3) sepia(1) saturate(10) hue-rotate(50deg);
-    text-shadow: 0 0 20px #00ff41, 0 0 30px #00ff41;
-}
-
-@keyframes lightning-flash {
-    0%, 100% { 
-        transform: scale(1);
-        filter: grayscale(1) brightness(2) sepia(1) saturate(10) hue-rotate(50deg);
-    }
-    50% { 
-        transform: scale(1.15);
-        filter: grayscale(1) brightness(4) sepia(1) saturate(10) hue-rotate(50deg);
-    }
+    /* Force monochrome emoji with theme color - subtle outline */
+    filter: brightness(0) drop-shadow(0 0 0 var(--secondary-accent)) drop-shadow(0 0 2px var(--secondary-accent));
 }
 
 /* Legacy storm-icon styles removed */
@@ -803,14 +875,14 @@ h1 {
 .controls label {
     display: block;
     margin-bottom: 14px;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.9em;
-    text-shadow: 0 0 5px #00ff41;
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 .controls label span {
     float: right;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-weight: 700;
 }
 
@@ -833,11 +905,15 @@ input[type=range] {
     -webkit-appearance: none;
     appearance: none;
     height: 6px;
-    background: rgba(0, 255, 65, 0.2);
+    background: linear-gradient(to right, 
+        rgba(var(--secondary-accent-rgb), 0.6) 0%, 
+        rgba(var(--secondary-accent-rgb), 0.6) var(--slider-percent, 0%), 
+        rgba(var(--secondary-accent-rgb), 0.15) var(--slider-percent, 0%), 
+        rgba(var(--secondary-accent-rgb), 0.15) 100%);
     outline: none;
     border-radius: 3px;
     margin-top: 8px;
-    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 255, 65, 0.3);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(var(--secondary-accent-rgb), 0.3);
 }
 
 input[type=range]::-webkit-slider-thumb {
@@ -845,64 +921,64 @@ input[type=range]::-webkit-slider-thumb {
     appearance: none;
     width: 18px;
     height: 18px;
-    background: #00ff41;
+    background: var(--secondary-accent);
     cursor: pointer;
     border-radius: 2px;
-    box-shadow: 0 0 10px #00ff41, 0 0 20px rgba(0, 255, 65, 0.5);
-    border: 1px solid #00ff41;
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px rgba(var(--secondary-accent-rgb), 0.5);
+    border: 1px solid var(--secondary-accent);
 }
 
 input[type=range]::-moz-range-thumb {
     width: 18px;
     height: 18px;
-    background: #00ff41;
+    background: var(--secondary-accent);
     cursor: pointer;
     border-radius: 2px;
-    box-shadow: 0 0 10px #00ff41, 0 0 20px rgba(0, 255, 65, 0.5);
-    border: 1px solid #00ff41;
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px rgba(var(--secondary-accent-rgb), 0.5);
+    border: 1px solid var(--secondary-accent);
 }
 
 input[type=range]::-webkit-slider-thumb:hover {
-    background: #66ff99;
-    box-shadow: 0 0 15px #00ff41, 0 0 30px rgba(0, 255, 65, 0.7);
+    background: var(--secondary-accent);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) var(--secondary-accent), 0 0 40px rgba(var(--secondary-accent-rgb), 0.9);
 }
 
 input[type=range]::-moz-range-thumb:hover {
-    background: #66ff99;
-    box-shadow: 0 0 15px #00ff41, 0 0 30px rgba(0, 255, 65, 0.7);
+    background: var(--secondary-accent);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) var(--secondary-accent), 0 0 40px rgba(var(--secondary-accent-rgb), 0.9);
 }
 
 button {
     padding: 10px 16px;
     margin: 0;
-    border: 2px solid #00ff41;
+    border: 2px solid var(--secondary-accent);
     border-radius: 4px;
-    background: rgba(0, 255, 65, 0.15);
-    color: #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.15);
+    color: var(--secondary-accent);
     font-size: 0.95em;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
-    text-shadow: 0 0 5px #00ff41;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3), inset 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.1);
 }
 
 button:hover {
-    background: rgba(0, 255, 65, 0.25);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6), inset 0 0 10px rgba(0, 255, 65, 0.2);
+    background: rgba(var(--secondary-accent-rgb), 0.25);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6), inset 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.2);
 }
 
 /* Storm Toggle Button States */
 #stormToggleBtn.storm-start {
-    background: rgba(0, 255, 65, 0.2) !important;
-    color: #00ff41 !important;
-    border-color: #00ff41 !important;
+    background: rgba(var(--secondary-accent-rgb), 0.2) !important;
+    color: var(--secondary-accent) !important;
+    border-color: var(--secondary-accent) !important;
 }
 
 #stormToggleBtn.storm-start:hover {
-    background: rgba(0, 255, 65, 0.35) !important;
+    background: rgba(var(--secondary-accent-rgb), 0.35) !important;
 }
 
 #stormToggleBtn.storm-stop {
@@ -934,25 +1010,25 @@ button:disabled {
 }
 
 .thunder-btn {
-    background: rgba(0, 255, 65, 0.2);
-    color: #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.2);
+    color: var(--secondary-accent);
     font-weight: bold;
     font-size: 1em;
-    border: 2px solid #00ff41;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    border: 2px solid var(--secondary-accent);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3);
     transition: all 0.2s;
 }
 
 .thunder-btn:hover {
-    background: rgba(0, 255, 65, 0.3);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+    background: rgba(var(--secondary-accent-rgb), 0.3);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6);
 }
 
 .thunder-btn.active {
-    background: rgba(0, 255, 65, 0.4);
-    color: #00ff41;
-    box-shadow: 0 0 30px rgba(0, 255, 65, 0.8), inset 0 0 15px rgba(0, 255, 65, 0.3);
-    border-color: #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.4);
+    color: var(--secondary-accent);
+    box-shadow: 0 0 calc(30px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8), inset 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3);
+    border-color: var(--secondary-accent);
     transform: scale(1.05);
 }
 
@@ -982,20 +1058,20 @@ button:disabled {
     padding: 10px 16px;
     font-size: 0.95em;
     font-weight: 600;
-    background: rgba(0, 255, 65, 0.2);
-    color: #00ff41;
-    border: 2px solid #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.2);
+    color: var(--secondary-accent);
+    border: 2px solid var(--secondary-accent);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-    text-shadow: 0 0 5px #00ff41;
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3);
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
 }
 
 .upload-btn:hover {
-    background: rgba(0, 255, 65, 0.3);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.6);
+    background: rgba(var(--secondary-accent-rgb), 0.3);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6);
 }
 
 .clear-playlist-btn {
@@ -1027,15 +1103,15 @@ button:disabled {
 
 @keyframes playlistReorder {
     0% {
-        background: rgba(0, 255, 65, 0.3);
+        background: rgba(var(--secondary-accent-rgb), 0.3);
         transform: translateX(-5px);
     }
     50% {
-        background: rgba(0, 255, 65, 0.15);
+        background: rgba(var(--theme-color-rgb), 0.15);
         transform: translateX(5px);
     }
     100% {
-        background: rgba(0, 255, 65, 0.05);
+        background: rgba(var(--theme-color-rgb), 0.05);
         transform: translateX(0);
     }
 }
@@ -1044,7 +1120,7 @@ button:disabled {
     max-height: 200px;
     overflow-y: auto;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 255, 65, 0.3);
+    border: 1px solid rgba(var(--theme-color-rgb), 0.3);
     border-radius: 4px;
     padding: 4px;
 }
@@ -1059,12 +1135,12 @@ button:disabled {
 }
 
 #playlist-container::-webkit-scrollbar-thumb {
-    background: rgba(0, 255, 65, 0.4);
+    background: rgba(var(--secondary-accent-rgb), 0.4);
     border-radius: 4px;
 }
 
 #playlist-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 255, 65, 0.6);
+    background: rgba(var(--secondary-accent-rgb), 0.6);
 }
 
 .playlist-item {
@@ -1074,21 +1150,21 @@ button:disabled {
     padding: 8px 10px;
     margin: 2px 0;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 255, 65, 0.2);
+    border: 1px solid rgba(var(--secondary-accent-rgb), 0.2);
     border-radius: 3px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .playlist-item:hover {
-    background: rgba(0, 255, 65, 0.1);
-    border-color: rgba(0, 255, 65, 0.5);
+    background: rgba(var(--secondary-accent-rgb), 0.1);
+    border-color: rgba(var(--secondary-accent-rgb), 0.5);
 }
 
 .playlist-item.active {
-    background: rgba(0, 255, 65, 0.2);
-    border-color: #00ff41;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    background: rgba(var(--secondary-accent-rgb), 0.2);
+    border-color: var(--secondary-accent);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3);
 }
 
 /* Up next playlist item - pulsing animation during crossfade */
@@ -1099,7 +1175,7 @@ button:disabled {
 .track-name {
     flex: 1;
     min-width: 0;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-size: 0.85em;
     font-family: 'Share Tech Mono', monospace;
     overflow: hidden;
@@ -1116,9 +1192,9 @@ button:disabled {
 .track-btn {
     padding: 4px 8px;
     font-size: 0.8em;
-    background: rgba(0, 255, 65, 0.15);
-    color: #00ff41;
-    border: 1px solid rgba(0, 255, 65, 0.5);
+    background: rgba(var(--secondary-accent-rgb), 0.15);
+    color: var(--secondary-accent);
+    border: 1px solid rgba(var(--secondary-accent-rgb), 0.5);
     border-radius: 3px;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -1126,8 +1202,8 @@ button:disabled {
 }
 
 .track-btn:hover {
-    background: rgba(0, 255, 65, 0.3);
-    box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+    background: rgba(var(--secondary-accent-rgb), 0.3);
+    box-shadow: 0 0 calc(8px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.4);
 }
 
 .track-btn.delete-btn {
@@ -1155,8 +1231,8 @@ button:disabled {
 #radio-eq-presets label {
     margin: 0;
     font-weight: 600;
-    color: #00ff41;
-    text-shadow: 0 0 5px #00ff41;
+    color: var(--secondary-accent);
+    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
     font-size: 0.95em;
 }
 
@@ -1170,27 +1246,27 @@ button:disabled {
     padding: 8px 12px;
     font-size: 0.8em;
     font-weight: 600;
-    background: rgba(0, 255, 65, 0.15);
-    color: #00ff41;
-    border: 2px solid rgba(0, 255, 65, 0.5);
+    background: rgba(var(--secondary-accent-rgb), 0.15);
+    color: var(--secondary-accent);
+    border: 2px solid rgba(var(--secondary-accent-rgb), 0.5);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
-    text-shadow: 0 0 3px #00ff41;
+    box-shadow: 0 0 calc(8px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.2);
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
     text-transform: uppercase;
 }
 
 .radio-preset-btn:hover {
-    background: rgba(0, 255, 65, 0.25);
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
-    border-color: #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.25);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.5);
+    border-color: var(--secondary-accent);
 }
 
 .radio-preset-btn:active {
-    background: rgba(0, 255, 65, 0.35);
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4), inset 0 0 10px rgba(0, 255, 65, 0.2);
+    background: rgba(var(--secondary-accent-rgb), 0.35);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.4), inset 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.2);
 }
 
 #radio-eq-controls {
@@ -1199,7 +1275,7 @@ button:disabled {
     gap: 10px;
     padding: 12px;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 255, 65, 0.3);
+    border: 1px solid rgba(var(--theme-color-rgb), 0.3);
     border-radius: 4px;
     margin-bottom: 12px;
 }
@@ -1252,10 +1328,14 @@ button:disabled {
     height: 6px;
     -webkit-appearance: none;
     appearance: none;
-    background: rgba(0, 0, 0, 0.4);
+    background: linear-gradient(to right, 
+        rgba(var(--secondary-accent-rgb), 0.5) 0%, 
+        rgba(var(--secondary-accent-rgb), 0.5) var(--track-percent, 0%), 
+        rgba(0, 0, 0, 0.4) var(--track-percent, 0%), 
+        rgba(0, 0, 0, 0.4) 100%);
     border-radius: 3px;
     outline: none;
-    border: 1px solid rgba(0, 255, 65, 0.3);
+    border: 1px solid rgba(var(--theme-color-rgb), 0.3);
     cursor: pointer;
 }
 
@@ -1264,45 +1344,45 @@ button:disabled {
     appearance: none;
     width: 14px;
     height: 14px;
-    background: #00ff41;
+    background: var(--secondary-accent);
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
+    box-shadow: 0 0 calc(8px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8);
     transition: all 0.2s ease;
 }
 
 #trackPosition::-webkit-slider-thumb:hover {
     transform: scale(1.2);
-    box-shadow: 0 0 12px rgba(0, 255, 65, 1);
+    box-shadow: 0 0 calc(12px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 1);
 }
 
 #trackPosition::-moz-range-thumb {
     width: 14px;
     height: 14px;
-    background: #00ff41;
+    background: var(--secondary-accent);
     border-radius: 50%;
     cursor: pointer;
     border: none;
-    box-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
+    box-shadow: 0 0 calc(8px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8);
     transition: all 0.2s ease;
 }
 
 #trackPosition::-moz-range-thumb:hover {
     transform: scale(1.2);
-    box-shadow: 0 0 12px rgba(0, 255, 65, 1);
+    box-shadow: 0 0 calc(12px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 1);
 }
 
 #track-time {
     display: flex;
     justify-content: space-between;
     font-size: 0.8em;
-    color: #00ff41;
+    color: var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
     padding: 0 4px;
 }
 
 #currentTime, #totalTime {
-    text-shadow: 0 0 3px #00ff41;
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 /* OSC Controls Styling */
@@ -1329,30 +1409,30 @@ button:disabled {
 
 .osc-mode-btn {
     padding: 10px;
-    background: rgba(0, 255, 65, 0.1);
-    border: 1px solid #00ff41;
-    color: #00ff41;
+    background: rgba(var(--secondary-accent-rgb), 0.1);
+    border: 1px solid var(--secondary-accent);
+    color: var(--secondary-accent);
     font-family: 'Share Tech Mono', monospace;
     cursor: pointer;
     transition: all 0.2s;
-    text-shadow: 0 0 3px #00ff41;
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
 }
 
 .osc-mode-btn:hover {
-    background: rgba(0, 255, 65, 0.2);
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    background: rgba(var(--secondary-accent-rgb), 0.2);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.5);
 }
 
 .osc-mode-btn.active {
-    background: rgba(0, 255, 65, 0.3);
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.7);
+    background: rgba(var(--secondary-accent-rgb), 0.3);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.7);
     font-weight: bold;
 }
 
 #osc-controls input[type="color"] {
     width: 100%;
     height: 40px;
-    border: 2px solid #00ff41;
+    border: 2px solid var(--secondary-accent);
     background: rgba(0, 0, 0, 0.5);
     cursor: pointer;
     border-radius: 4px;
@@ -1364,7 +1444,7 @@ button:disabled {
 }
 
 #osc-controls input[type="color"]::-webkit-color-swatch {
-    border: 1px solid #00ff41;
+    border: 1px solid var(--secondary-accent);
     border-radius: 2px;
 }
 
@@ -1373,6 +1453,7 @@ button:disabled {
     height: 20px;
     margin-right: 10px;
     cursor: pointer;
-    accent-color: #00ff41;
+    accent-color: var(--secondary-accent);
 }
+
 
