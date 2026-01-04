@@ -478,6 +478,9 @@ details summary::marker {
     min-width: 0;
     padding: 12px 0;
     font-size: 1em;
+    /* Force emoji icons to be monochrome on all devices */
+    -webkit-text-fill-color: var(--secondary-accent);
+    text-fill-color: var(--secondary-accent);
 }
 #music-controls label {
     width: 100%;
