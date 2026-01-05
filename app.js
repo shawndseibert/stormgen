@@ -265,18 +265,83 @@ function updateWeatherIcon() {
 function showLightningIcon() {
     if (!weatherIcon) return;
     
+    const titleRow = document.querySelector('.title-row');
+    const lightningMode = document.getElementById('oscLightningMode')?.value || 'off';
+    const isLongFade = ['outline-long', 'invert-long', 'bright-long', 'bright-back-long'].includes(lightningMode);
+    const flashDuration = isLongFade ? 1400 : 180;
+    
     // Show lightning bolt overlay on cloud
     const originalIcon = weatherIcon.textContent;
     weatherIcon.textContent = '⛈️'; // Rain cloud with lightning
-    
-    // Add lightning animation class (inverts colors)
-    weatherIcon.classList.add('lightning');
-    
-    // Remove after animation completes and fade back to current rain level icon
-    setTimeout(() => {
+
+    // Helper to apply chosen visual mode
+    const applyFlash = () => {
+        if (lightningMode === 'invert' || lightningMode === 'invert-long') {
+            if (titleRow) {
+                if (lightningMode === 'invert-long') {
+                    titleRow.classList.add('lightning-invert-long');
+                } else {
+                    titleRow.classList.add('lightning-invert');
+                }
+            }
+        } else if (lightningMode === 'bright' || lightningMode === 'bright-long') {
+            if (titleRow) {
+                if (lightningMode === 'bright-long') {
+                    titleRow.classList.add('lightning-bright-long');
+                } else {
+                    titleRow.classList.add('lightning-bright');
+                }
+            }
+        } else if (lightningMode === 'bright-back' || lightningMode === 'bright-back-long') {
+            if (titleRow) {
+                if (lightningMode === 'bright-back-long') {
+                    titleRow.classList.add('lightning-bright-back-long');
+                } else {
+                    titleRow.classList.add('lightning-bright-back');
+                }
+            }
+        } else if (lightningMode === 'outline' || lightningMode === 'outline-long') {
+            if (lightningMode === 'outline-long') {
+                weatherIcon.classList.add('lightning-long');
+            } else {
+                weatherIcon.classList.add('lightning');
+            }
+        }
+    };
+
+    // Helper to clear classes between flashes
+    const clearFlash = () => {
         weatherIcon.classList.remove('lightning');
+        weatherIcon.classList.remove('lightning-long');
+        if (titleRow) {
+            titleRow.classList.remove('lightning-invert');
+            titleRow.classList.remove('lightning-invert-long');
+            titleRow.classList.remove('lightning-bright');
+            titleRow.classList.remove('lightning-bright-long');
+            titleRow.classList.remove('lightning-bright-back');
+            titleRow.classList.remove('lightning-bright-back-long');
+        }
+    };
+
+    // Decide random flash pattern: 1, 2 quick, or 3 irregular
+    const patternRoll = Math.random();
+    const flashes = isLongFade ? 1 : (patternRoll < 0.5 ? 1 : patternRoll < 0.8 ? 2 : 3);
+
+    let currentTime = 0;
+    for (let i = 0; i < flashes; i++) {
+        const gap = i === 0 ? 0 : 120 + Math.random() * 140; // 120-260ms gaps
+        currentTime += gap;
+        setTimeout(() => {
+            applyFlash();
+            setTimeout(clearFlash, flashDuration); // allow mode-specific fade
+        }, currentTime);
+    }
+
+    // Final cleanup and icon reset after the last flash
+    setTimeout(() => {
+        clearFlash();
         updateWeatherIcon(); // Return to appropriate rain/cloud icon (no lightning)
-    }, 300);
+    }, currentTime + flashDuration + 120);
 }
 
 // ==================== SLIDER FILL UPDATE ====================
@@ -2025,6 +2090,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     musicVolumeSlider.addEventListener('input', () => {
         const volume = parseFloat(musicVolumeSlider.value) / 100;
         
+        // Update the volume label to show current value
+        const musicVolumeLabel = document.getElementById('musicVolumeLabel');
+        if (musicVolumeLabel) {
+            musicVolumeLabel.textContent = musicVolumeSlider.value;
+        }
+        
+        // Update the CSS variable for the slider fill gradient
+        musicVolumeSlider.style.setProperty('--volume-percent', musicVolumeSlider.value + '%');
+        
         // If crossfading, don't override gain values - the crossfade interval manages them
         if (isCrossfading) {
             // Just store the target volume, the crossfade will use it
@@ -2160,32 +2234,71 @@ window.addEventListener('DOMContentLoaded', async () => {
         
         panel.addEventListener('toggle', () => {
             localStorage.setItem(key, panel.open ? 'open' : 'closed');
-            
-            // Make waveform sticky when OSC panel is opened
-            const waveformContainer = document.getElementById('waveform-container');
-            const summary = panel.querySelector('summary');
-            if (summary && summary.textContent.includes('OSC') && waveformContainer) {
-                if (panel.open) {
-                    waveformContainer.style.position = 'sticky';
-                    waveformContainer.style.top = '0';
-                    waveformContainer.style.zIndex = '100';
-                } else {
-                    waveformContainer.style.position = 'relative';
-                    waveformContainer.style.top = 'auto';
-                    waveformContainer.style.zIndex = 'auto';
-                }
-            }
         });
-        
-        // Initialize sticky state on page load if OSC panel is open
-        const waveformContainer = document.getElementById('waveform-container');
-        const summary = panel.querySelector('summary');
-        if (summary && summary.textContent.includes('OSC') && waveformContainer && panel.open) {
-            waveformContainer.style.position = 'sticky';
-            waveformContainer.style.top = '0';
-            waveformContainer.style.zIndex = '100';
-        }
     });
+    
+    // ===== WAVEFORM + TITLE STICKY ON SCROLL (ONLY WHEN BOTH SETTINGS & OSC OPEN) =====
+    const settingsPanel = document.getElementById('settings-panel');
+    const oscPanel = document.getElementById('osc-panel');
+    const waveformContainer = document.getElementById('waveform-container');
+    const titleRow = document.querySelector('.title-row');
+    const container = document.querySelector('.container');
+    
+    // Force remove any sticky classes on load (clean slate)
+    if (waveformContainer) waveformContainer.classList.remove('sticky-active');
+    if (titleRow) titleRow.classList.remove('sticky-active');
+    
+    // Make waveform/title sticky only when BOTH Settings AND OSC panels are open
+    const initialOffset = 80; // Need to scroll significantly to trigger sticky
+    
+    function handleScrollSticky() {
+        if (!waveformContainer || !titleRow || !container || !settingsPanel || !oscPanel) return;
+        
+        const scrollTop = container.scrollTop;
+        
+        // Check if BOTH Settings and OSC panels are open
+        const settingsOpen = settingsPanel.hasAttribute('open');
+        const oscOpen = oscPanel.hasAttribute('open');
+        const bothOpen = settingsOpen && oscOpen;
+        
+        // Only apply sticky if BOTH panels are open AND user has scrolled significantly
+        const shouldBeSticky = scrollTop >= initialOffset && bothOpen;
+        
+        if (shouldBeSticky) {
+            waveformContainer.classList.add('sticky-active');
+            titleRow.classList.add('sticky-active');
+            // Add padding to container to prevent content from being hidden under fixed header
+            container.style.paddingTop = '100px';
+        } else {
+            waveformContainer.classList.remove('sticky-active');
+            titleRow.classList.remove('sticky-active');
+            // Remove extra padding when not sticky
+            container.style.paddingTop = '20px';
+        }
+    }
+    
+    // Listen for scroll events on the container
+    if (container) {
+        container.addEventListener('scroll', handleScrollSticky);
+    }
+    
+    // When either panel toggles, re-evaluate sticky state
+    if (settingsPanel) {
+        settingsPanel.addEventListener('toggle', () => {
+            // Always re-check if sticky should be active based on current state
+            handleScrollSticky();
+        });
+    }
+    
+    if (oscPanel) {
+        oscPanel.addEventListener('toggle', () => {
+            // Always re-check if sticky should be active based on current state
+            handleScrollSticky();
+        });
+    }
+    
+    // Check on load immediately
+    handleScrollSticky();
     
     // ===== OSC CONTROLS =====
     
@@ -2271,6 +2384,35 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
+    // Waveform Line Opacity
+    const oscOpacitySlider = document.getElementById('oscOpacity');
+    const oscOpacityLabel = document.getElementById('oscOpacityLabel');
+    if (oscOpacitySlider) {
+        oscOpacitySlider.addEventListener('input', () => {
+            const value = parseFloat(oscOpacitySlider.value);
+            oscSettings.lineOpacity = value;
+            oscOpacityLabel.textContent = Math.round(value * 100) + '%';
+        });
+    }
+    
+    // Title Visibility
+    const oscTitleOpacitySlider = document.getElementById('oscTitleOpacity');
+    const oscTitleOpacityLabel = document.getElementById('oscTitleOpacityLabel');
+    if (oscTitleOpacitySlider) {
+        oscTitleOpacitySlider.addEventListener('input', () => {
+            const value = parseFloat(oscTitleOpacitySlider.value);
+            const titleText = document.querySelector('.title-row h1');
+            const weatherIcon = document.querySelector('.weather-icon');
+            if (titleText) {
+                titleText.style.opacity = value;
+            }
+            if (weatherIcon) {
+                weatherIcon.style.opacity = value;
+            }
+            oscTitleOpacityLabel.textContent = Math.round(value * 100) + '%';
+        });
+    }
+    
     // Fade trail
     const oscFadeTrailSlider = document.getElementById('oscFadeTrail');
     const oscFadeTrailLabel = document.getElementById('oscFadeTrailLabel');
@@ -2306,11 +2448,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
-    // Rainbow checkbox
-    const oscRainbowCheckbox = document.getElementById('oscRainbow');
-    if (oscRainbowCheckbox) {
-        oscRainbowCheckbox.addEventListener('change', () => {
-            oscSettings.rainbow = oscRainbowCheckbox.checked;
+    // Lightning Effect Mode selector
+    const oscLightningMode = document.getElementById('oscLightningMode');
+    if (oscLightningMode) {
+        oscLightningMode.addEventListener('change', () => {
+            // Value is stored and used in showLightningIcon function
+            // No need to store in oscSettings as it's a visual effect
         });
     }
     
@@ -2321,7 +2464,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // Function to sync waveform color with CSS theme color
 function syncWaveformColorWithTheme() {
     const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-accent').trim();
-    if (secondaryColor && !oscSettings.rainbow) {
+    if (secondaryColor) {
         oscSettings.color = secondaryColor;
         // Update color picker if it exists
         const oscColorPicker = document.getElementById('oscColor');
@@ -2456,7 +2599,7 @@ const canvasCtx = canvas.getContext('2d');
 
 // Oscilloscope settings (defaults)
 let oscSettings = {
-    mode: 'waveform', // 'waveform', 'bars', 'circular'
+    mode: 'waveform', // 'waveform', 'bars', 'circular', 'radial', 'polygon'
     lineWidth: 2,
     glowIntensity: 10,
     amplification: 1,
@@ -2468,7 +2611,8 @@ let oscSettings = {
     mirror: false,
     fill: false,
     dots: false,
-    rainbow: false
+    containerOpacity: 0.08,
+    lineOpacity: 0.5
 };
 
 // Use the analyzer already created at the top
@@ -2489,20 +2633,20 @@ function drawWaveform() {
     
     // Background with optional fade trail effect
     if (oscSettings.fadeTrail > 0) {
-        canvasCtx.fillStyle = `rgba(0, 0, 0, ${1 - oscSettings.fadeTrail})`;
+        // Higher slider value = stronger trail (slower fade)
+        const trailStrength = Math.min(Math.max(oscSettings.fadeTrail, 0), 1);
+        const fadeAlpha = 1 - trailStrength * 0.95; // 0.05..1 range
+        const bgColor = oscSettings.bgColor === 'transparent' ? { r: 0, g: 0, b: 0 } : hexToRgb(oscSettings.bgColor);
+        canvasCtx.fillStyle = `rgba(${bgColor.r}, ${bgColor.g}, ${bgColor.b}, ${fadeAlpha})`;
         canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
-        // Use transparent or black background
+        // Use transparent or solid background
         if (oscSettings.bgColor === 'transparent') {
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
         } else {
             const bgColor = hexToRgb(oscSettings.bgColor);
-            if (bgColor) {
-                canvasCtx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-            } else {
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-            }
+            canvasCtx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
         }
     }
     
@@ -2513,11 +2657,16 @@ function drawWaveform() {
         drawBarsMode();
     } else if (oscSettings.mode === 'circular') {
         drawCircularMode();
+    } else if (oscSettings.mode === 'radial') {
+        drawRadialMode();
+    } else if (oscSettings.mode === 'polygon') {
+        drawPolygonMode();
     }
 }
 
 function drawWaveformMode() {
     const bufferLength = dataArray.length;
+    const shadowAmount = oscSettings.fadeTrail > 0 ? 0 : oscSettings.glowIntensity;
     
     // Draw grid lines
     canvasCtx.strokeStyle = `${oscSettings.color}33`; // 20% opacity
@@ -2532,8 +2681,8 @@ function drawWaveformMode() {
     
     // Waveform
     canvasCtx.lineWidth = oscSettings.lineWidth;
-    canvasCtx.shadowBlur = oscSettings.glowIntensity;
-    canvasCtx.shadowColor = oscSettings.color;
+    canvasCtx.shadowBlur = shadowAmount;
+    canvasCtx.shadowColor = shadowAmount > 0 ? oscSettings.color : 'transparent';
     
     // Optional fill
     if (oscSettings.fill) {
@@ -2578,18 +2727,12 @@ function drawPoints(points, baseColor) {
     for (let i = 0; i < points.length; i++) {
         const point = points[i];
         
-        // Rainbow mode
-        if (oscSettings.rainbow) {
-            const hue = (i / points.length) * 360;
-            canvasCtx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
-            canvasCtx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-        } else {
-            canvasCtx.strokeStyle = baseColor;
-        }
+        canvasCtx.strokeStyle = colorWithOpacity(baseColor, oscSettings.lineOpacity);
+        canvasCtx.shadowColor = baseColor;
         
         if (oscSettings.dots) {
             // Dots mode
-            canvasCtx.fillStyle = oscSettings.rainbow ? `hsl(${(i / points.length) * 360}, 100%, 50%)` : baseColor;
+            canvasCtx.fillStyle = colorWithOpacity(baseColor, oscSettings.lineOpacity);
             canvasCtx.beginPath();
             canvasCtx.arc(point.x, point.y, oscSettings.lineWidth / 2, 0, Math.PI * 2);
             canvasCtx.fill();
@@ -2620,22 +2763,17 @@ function drawPoints(points, baseColor) {
 function drawBarsMode() {
     const bufferLength = dataArray.length;
     const barWidth = canvas.width / bufferLength;
-    
-    canvasCtx.shadowBlur = oscSettings.glowIntensity;
+    const shadowAmount = oscSettings.fadeTrail > 0 ? 0 : oscSettings.glowIntensity;
+    canvasCtx.shadowBlur = shadowAmount;
+    canvasCtx.shadowColor = shadowAmount > 0 ? oscSettings.color : 'transparent';
     
     for (let i = 0; i < bufferLength; i++) {
         const barHeight = (dataArray[i] / 255.0) * canvas.height * oscSettings.amplification;
         const x = i * barWidth;
         const y = canvas.height / 2 - barHeight / 2;
         
-        if (oscSettings.rainbow) {
-            const hue = (i / bufferLength) * 360;
-            canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-            canvasCtx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-        } else {
-            canvasCtx.fillStyle = oscSettings.color;
-            canvasCtx.shadowColor = oscSettings.color;
-        }
+        canvasCtx.fillStyle = colorWithOpacity(oscSettings.color, oscSettings.lineOpacity);
+        canvasCtx.shadowColor = oscSettings.color;
         
         canvasCtx.fillRect(x, y, barWidth - 1, barHeight);
         
@@ -2651,10 +2789,11 @@ function drawCircularMode() {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     const radius = Math.min(canvas.width, canvas.height) * 0.3;
+    const shadowAmount = oscSettings.fadeTrail > 0 ? 0 : oscSettings.glowIntensity;
     
     canvasCtx.lineWidth = oscSettings.lineWidth;
-    canvasCtx.shadowBlur = oscSettings.glowIntensity;
-    canvasCtx.shadowColor = oscSettings.color;
+    canvasCtx.shadowBlur = shadowAmount;
+    canvasCtx.shadowColor = shadowAmount > 0 ? oscSettings.color : 'transparent';
     
     canvasCtx.beginPath();
     
@@ -2666,16 +2805,11 @@ function drawCircularMode() {
         const x = centerX + Math.cos(angle) * r;
         const y = centerY + Math.sin(angle) * r;
         
-        if (oscSettings.rainbow) {
-            const hue = (i / bufferLength) * 360;
-            canvasCtx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
-            canvasCtx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-        } else {
-            canvasCtx.strokeStyle = oscSettings.color;
-        }
+        canvasCtx.strokeStyle = colorWithOpacity(oscSettings.color, oscSettings.lineOpacity);
+        canvasCtx.shadowColor = oscSettings.color;
         
         if (oscSettings.dots) {
-            canvasCtx.fillStyle = oscSettings.rainbow ? `hsl(${(i / bufferLength) * 360}, 100%, 50%)` : oscSettings.color;
+            canvasCtx.fillStyle = colorWithOpacity(oscSettings.color, oscSettings.lineOpacity);
             canvasCtx.beginPath();
             canvasCtx.arc(x, y, oscSettings.lineWidth / 2, 0, Math.PI * 2);
             canvasCtx.fill();
@@ -2721,6 +2855,85 @@ function drawCircularMode() {
     }
 }
 
+function drawRadialMode() {
+    const bufferLength = dataArray.length;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const baseRadius = Math.min(canvas.width, canvas.height) * 0.15;
+    const maxRadius = Math.min(canvas.width, canvas.height) * 0.48;
+    const step = Math.max(1, Math.floor(bufferLength / 180));
+    const shadowAmount = oscSettings.fadeTrail > 0 ? 0 : oscSettings.glowIntensity;
+    canvasCtx.lineWidth = Math.max(1, oscSettings.lineWidth - 0.5);
+    canvasCtx.shadowBlur = shadowAmount;
+    canvasCtx.strokeStyle = colorWithOpacity(oscSettings.color, oscSettings.lineOpacity);
+    canvasCtx.shadowColor = shadowAmount > 0 ? oscSettings.color : 'transparent';
+
+    for (let i = 0; i < bufferLength; i += step) {
+        const amp = dataArray[i] / 255.0;
+        const r0 = baseRadius;
+        const r1 = baseRadius + amp * (maxRadius - baseRadius) * oscSettings.amplification;
+        const angle = (i / bufferLength) * Math.PI * 2;
+        const x0 = centerX + Math.cos(angle) * r0;
+        const y0 = centerY + Math.sin(angle) * r0;
+        const x1 = centerX + Math.cos(angle) * r1;
+        const y1 = centerY + Math.sin(angle) * r1;
+
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(x0, y0);
+        canvasCtx.lineTo(x1, y1);
+        canvasCtx.stroke();
+    }
+
+    // Optional inner ring for cohesion
+    canvasCtx.beginPath();
+    canvasCtx.lineWidth = 1;
+    canvasCtx.shadowBlur = 0;
+    canvasCtx.strokeStyle = colorWithOpacity(oscSettings.color, 0.4);
+    canvasCtx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+    canvasCtx.stroke();
+}
+
+function drawPolygonMode() {
+    const bufferLength = dataArray.length;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const baseRadius = Math.min(canvas.width, canvas.height) * 0.12;
+    const maxRadius = Math.min(canvas.width, canvas.height) * 0.45;
+    const points = [];
+    const shadowAmount = oscSettings.fadeTrail > 0 ? 0 : oscSettings.glowIntensity;
+
+    for (let i = 0; i < bufferLength; i++) {
+        const amp = dataArray[i] / 255.0;
+        const radius = baseRadius + Math.pow(amp, 1.3) * (maxRadius - baseRadius) * oscSettings.amplification;
+        const angle = (i / bufferLength) * Math.PI * 2;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        points.push({ x, y });
+    }
+
+    canvasCtx.lineWidth = oscSettings.lineWidth;
+    canvasCtx.shadowBlur = shadowAmount;
+    canvasCtx.strokeStyle = colorWithOpacity(oscSettings.color, oscSettings.lineOpacity);
+    canvasCtx.shadowColor = shadowAmount > 0 ? oscSettings.color : 'transparent';
+
+    canvasCtx.beginPath();
+    points.forEach((p, idx) => {
+        if (idx === 0) {
+            canvasCtx.moveTo(p.x, p.y);
+        } else {
+            canvasCtx.lineTo(p.x, p.y);
+        }
+    });
+    canvasCtx.closePath();
+    canvasCtx.stroke();
+
+    if (oscSettings.fill) {
+        const color = hexToRgb(oscSettings.color);
+        canvasCtx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.18)`;
+        canvasCtx.fill();
+    }
+}
+
 function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -2728,6 +2941,18 @@ function hexToRgb(hex) {
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
     } : {r: 0, g: 255, b: 65};
+}
+
+// Convert color to rgba with opacity
+function colorWithOpacity(color, opacity) {
+    if (color.startsWith('hsl')) {
+        // For HSL colors, replace the closing parenthesis with alpha
+        return color.replace(')', `, ${opacity})`).replace('hsl', 'hsla');
+    } else {
+        // For hex colors, convert to rgba
+        const rgb = hexToRgb(color);
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
+    }
 }
 
 // Start the visualizer

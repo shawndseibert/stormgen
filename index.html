@@ -9,6 +9,11 @@
 <body>
     <div class="container">
         <div class="title-row">
+            <!-- Waveform Visualizer (background layer) -->
+            <div id="waveform-container">
+                <span class="waveform-label">AUDIO WAVEFORM</span>
+                <canvas id="waveform"></canvas>
+            </div>
             <h1>Storm Generator</h1>
             <div id="weather-icon" class="weather-icon">☀️</div>
         </div>
@@ -18,11 +23,6 @@
         <!-- Music Playback Controls -->
         <div class="music-player-wrapper">
             <div class="standalone-panel music-player-panel">
-                <!-- Waveform Visualizer (always visible, inside panel border) -->
-                <div id="waveform-container">
-                    <span class="waveform-label">AUDIO WAVEFORM</span>
-                    <canvas id="waveform"></canvas>
-                </div>
                 
                 <details>
                     <summary>
@@ -72,6 +72,15 @@
             
             <!-- Always visible controls (inside panel border) -->
             <div id="music-controls-always-visible">
+                <!-- Music Volume Slider -->
+                <div id="music-volume-section">
+                    <label for="musicVolume">
+                        <div>Music Volume</div>
+                        <div style="text-align: right;"><span id="musicVolumeLabel">100</span></div>
+                    </label>
+                    <input type="range" id="musicVolume" min="0" max="100" value="100">
+                </div>
+                
                 <!-- Playback Controls -->
                 <div id="music-controls-row">
                     <button id="musicPlayPauseBtn">▶ Play</button>
@@ -95,7 +104,7 @@
         <div class="controls">
             
             <!-- Settings Panel -->
-            <details>
+            <details id="settings-panel">
                 <summary>Settings</summary>
                 <div id="settings-controls">
                     <!-- Theme Sub-Panel -->
@@ -187,12 +196,6 @@
                     <details class="nested-panel">
                         <summary>Audio Effects & EQ</summary>
                         <div id="audio-effects-controls">
-                            <!-- Music Volume Slider -->
-                            <label for="musicVolume">Music Volume
-                                <input type="range" id="musicVolume" min="0" max="100" value="100">
-                                <span id="musicVolumeLabel">100</span>
-                            </label>
-                            
                             <label for="musicReverb">Music Reverb Mix
                                 <input type="range" id="musicReverb" min="0" max="1" step="0.01" value="0.3">
                                 <span id="musicReverbLabel">0.3</span>
@@ -254,6 +257,8 @@
                                 <button class="osc-mode-btn active" data-mode="waveform">Waveform</button>
                                 <button class="osc-mode-btn" data-mode="bars">Bars</button>
                                 <button class="osc-mode-btn" data-mode="circular">Circular</button>
+                                <button class="osc-mode-btn" data-mode="radial">Radial Spokes</button>
+                                <button class="osc-mode-btn" data-mode="polygon">Polygon Burst</button>
                             </div>
                             
                             <!-- Line Width -->
@@ -296,6 +301,18 @@
                                 <input type="color" id="oscBgColor" value="#000a05">
                             </label>
                             
+                            <!-- Waveform Opacity -->
+                            <label for="oscOpacity">Waveform Visibility
+                                <input type="range" id="oscOpacity" min="0" max="1" step="0.05" value="0.5">
+                                <span id="oscOpacityLabel">50%</span>
+                            </label>
+                            
+                            <!-- Title Visibility -->
+                            <label for="oscTitleOpacity">Title Visibility
+                                <input type="range" id="oscTitleOpacity" min="0" max="1" step="0.05" value="1">
+                                <span id="oscTitleOpacityLabel">100%</span>
+                            </label>
+                            
                             <!-- Fade Trail Effect -->
                             <label for="oscFadeTrail">Trail Effect
                                 <input type="range" id="oscFadeTrail" min="0" max="1" step="0.05" value="0">
@@ -314,16 +331,25 @@
                                 Fill Under Wave
                             </label>
                             
+                            <!-- Lightning Effect Mode -->
+                            <label>Lightning Effect
+                                <select id="oscLightningMode" style="margin-left: 4px; padding: 4px 8px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--theme-color); color: var(--secondary-accent); border-radius: 3px; font-family: 'Share Tech Mono', monospace; cursor: pointer;">
+                                    <option value="off">Off</option>
+                                    <option value="outline">Outline (Behind)</option>
+                                    <option value="outline-long">Outline (Behind) - Long Fade</option>
+                                    <option value="invert">Invert (Front)</option>
+                                    <option value="invert-long">Invert (Front) - Long Fade</option>
+                                    <option value="bright">Bright Flash (Front)</option>
+                                    <option value="bright-long">Bright Flash (Front) - Long Fade</option>
+                                    <option value="bright-back" selected>Bright Flash (Back)</option>
+                                    <option value="bright-back-long">Bright Flash (Back) - Long Fade</option>
+                                </select>
+                            </label>
+                            
                             <!-- Dots Mode -->
                             <label>
                                 <input type="checkbox" id="oscDots">
                                 Dots Mode
-                            </label>
-                            
-                            <!-- Rainbow Mode -->
-                            <label>
-                                <input type="checkbox" id="oscRainbow">
-                                Rainbow Color Mode
                             </label>
                         </div>
                     </details>

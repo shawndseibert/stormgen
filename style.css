@@ -774,11 +774,24 @@ body::after {
     margin-bottom: 16px;
     justify-content: center;
     padding: 16px 70px 16px 10px;
-    background: rgba(0, 0, 0, 0.6);
+    background: transparent;
     border: 2px solid var(--theme-color);
     border-radius: 4px;
     position: relative;
-    transition: all 0.1s ease-out;
+    box-sizing: border-box;
+}
+
+/* Make title fixed and sticky when both Settings and OSC are open */
+.title-row.sticky-active {
+    position: fixed;
+    top: 0 !important;
+    left: 20px;
+    right: 20px;
+    width: calc(100% - 40px);
+    z-index: 9996;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 /* Lightning flash effect on title bar */
@@ -816,6 +829,487 @@ body::after {
     }
 }
 
+.title-row.lightning-invert {
+    /* Don't apply filter to title-row to avoid layout issues */
+}
+
+.title-row.lightning-invert h1 {
+    animation: titleTextLightningInvert 0.8s ease-out;
+}
+
+.title-row.lightning-invert .weather-icon {
+    animation: weatherIconLightningInvert 0.8s ease-out;
+}
+
+.title-row.lightning-invert #waveform-container {
+    animation: waveformLightningInvert 0.8s ease-out;
+}
+
+@keyframes titleTextLightningInvert {
+    0% {
+        filter: invert(0);
+    }
+    10% {
+        filter: invert(1);
+    }
+    25% {
+        filter: invert(0.8);
+    }
+    50% {
+        filter: invert(0.3);
+    }
+    100% {
+        filter: invert(0);
+    }
+}
+
+@keyframes weatherIconLightningInvert {
+    0% {
+        filter: invert(0);
+    }
+    10% {
+        filter: invert(1);
+    }
+    25% {
+        filter: invert(0.8);
+    }
+    50% {
+        filter: invert(0.3);
+    }
+    100% {
+        filter: invert(0);
+    }
+}
+
+@keyframes waveformLightningInvert {
+    0% {
+        filter: invert(0);
+    }
+    10% {
+        filter: invert(1);
+    }
+    25% {
+        filter: invert(0.8);
+    }
+    50% {
+        filter: invert(0.3);
+    }
+    100% {
+        filter: invert(0);
+    }
+}
+
+.title-row.lightning-bright h1 {
+    animation: titleTextLightningBright 0.8s ease-out;
+}
+
+.title-row.lightning-bright .weather-icon {
+    animation: weatherIconLightningBright 0.8s ease-out;
+}
+
+.title-row.lightning-bright #waveform-container {
+    animation: waveformLightningBrightFront 0.8s ease-out;
+}
+
+.title-row.lightning-bright {
+    animation: titleRowBackgroundLightningBright 0.8s ease-out;
+}
+
+.title-row.lightning-bright-back {
+    animation: titleRowLightningBrightBack 0.8s ease-out;
+}
+
+.title-row.lightning-bright-back #waveform-container {
+    animation: waveformLightningBrightBack 0.8s ease-out;
+}
+
+@keyframes titleRowBackgroundLightningBright {
+    0% {
+        background: transparent;
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+    }
+    10% {
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 calc(80px * var(--glow-intensity)) rgba(255, 255, 255, 1), inset 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.8);
+    }
+    25% {
+        background: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 calc(60px * var(--glow-intensity)) rgba(255, 255, 255, 0.8), inset 0 0 calc(30px * var(--glow-intensity)) rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.4);
+    }
+    100% {
+        background: transparent;
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+    }
+}
+
+@keyframes titleRowLightningBrightBack {
+    0% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+    10% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 calc(80px * var(--glow-intensity)) rgba(255, 255, 255, 1), inset 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.6);
+    }
+    25% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 calc(60px * var(--glow-intensity)) rgba(255, 255, 255, 0.7), inset 0 0 calc(30px * var(--glow-intensity)) rgba(255, 255, 255, 0.4);
+    }
+    50% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.4), inset 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.2);
+    }
+    100% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+@keyframes titleTextLightningBright {
+    0% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px var(--secondary-accent);
+    }
+    10% {
+        text-shadow: 0 0 calc(30px * var(--glow-intensity)) white, 0 0 calc(50px * var(--glow-intensity)) rgba(255, 255, 255, 0.8);
+        color: white;
+    }
+    25% {
+        text-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.6), 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.4);
+        color: rgba(255, 255, 255, 0.9);
+    }
+    50% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.5);
+    }
+    100% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px var(--secondary-accent);
+        color: var(--secondary-accent);
+    }
+}
+
+@keyframes weatherIconLightningBright {
+    0% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+        color: var(--secondary-accent);
+    }
+    10% {
+        text-shadow: 0 0 calc(30px * var(--glow-intensity)) white, 0 0 calc(50px * var(--glow-intensity)) rgba(255, 255, 255, 0.8);
+        color: white;
+    }
+    25% {
+        text-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.6);
+        color: rgba(255, 255, 255, 0.9);
+    }
+    50% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.5);
+    }
+    100% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+        color: var(--secondary-accent);
+    }
+}
+
+@keyframes waveformLightningBrightFront {
+    0% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+    10% {
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: inset 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.8), 0 0 calc(60px * var(--glow-intensity)) rgba(255, 255, 255, 1);
+    }
+    25% {
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: inset 0 0 calc(30px * var(--glow-intensity)) rgba(255, 255, 255, 0.5), 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.6);
+    }
+    50% {
+        background: rgba(255, 255, 255, 0.3);
+        box-shadow: inset 0 0 calc(15px * var(--glow-intensity)) rgba(255, 255, 255, 0.2), 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.3);
+    }
+    100% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+}
+
+@keyframes waveformLightningBrightBack {
+    0% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+    10% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.6), 0 0 calc(60px * var(--glow-intensity)) rgba(255, 255, 255, 0.9);
+    }
+    25% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(30px * var(--glow-intensity)) rgba(255, 255, 255, 0.4), 0 0 calc(40px * var(--glow-intensity)) rgba(255, 255, 255, 0.6);
+    }
+    50% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(15px * var(--glow-intensity)) rgba(255, 255, 255, 0.2), 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.3);
+    }
+    100% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+}
+
+/* Long-fade lightning variants */
+.title-row:has(.weather-icon.lightning-long) {
+    animation: titleBarLightningFlashLong 1.6s ease-out;
+}
+
+@keyframes titleBarLightningFlashLong {
+    0% {
+        background: rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+        border-color: var(--theme-color);
+    }
+    12% {
+        background: rgba(var(--secondary-accent-rgb), 0.95);
+        box-shadow: 0 0 calc(90px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 1), inset 0 0 calc(50px * var(--glow-intensity)) rgba(255, 255, 255, 0.9);
+        border-color: var(--secondary-accent);
+    }
+    32% {
+        background: rgba(var(--secondary-accent-rgb), 0.7);
+        box-shadow: 0 0 calc(70px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.85), inset 0 0 calc(35px * var(--glow-intensity)) rgba(255, 255, 255, 0.55);
+        border-color: var(--secondary-accent);
+    }
+    60% {
+        background: rgba(var(--secondary-accent-rgb), 0.35);
+        box-shadow: 0 0 calc(45px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.55);
+        border-color: var(--secondary-accent);
+    }
+    100% {
+        background: rgba(0, 0, 0, 0.6);
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+        border-color: var(--theme-color);
+    }
+}
+
+.title-row.lightning-invert-long h1 {
+    animation: titleTextLightningInvertLong 1.4s ease-out;
+}
+
+.title-row.lightning-invert-long .weather-icon {
+    animation: weatherIconLightningInvertLong 1.4s ease-out;
+}
+
+.title-row.lightning-invert-long #waveform-container {
+    animation: waveformLightningInvertLong 1.4s ease-out;
+}
+
+@keyframes titleTextLightningInvertLong {
+    0% { filter: invert(0); }
+    10% { filter: invert(1); }
+    28% { filter: invert(0.85); }
+    55% { filter: invert(0.55); }
+    80% { filter: invert(0.2); }
+    100% { filter: invert(0); }
+}
+
+@keyframes weatherIconLightningInvertLong {
+    0% { filter: invert(0); }
+    10% { filter: invert(1); }
+    28% { filter: invert(0.85); }
+    55% { filter: invert(0.55); }
+    80% { filter: invert(0.2); }
+    100% { filter: invert(0); }
+}
+
+@keyframes waveformLightningInvertLong {
+    0% { filter: invert(0); }
+    10% { filter: invert(1); }
+    28% { filter: invert(0.85); }
+    55% { filter: invert(0.55); }
+    80% { filter: invert(0.2); }
+    100% { filter: invert(0); }
+}
+
+.title-row.lightning-bright-long {
+    animation: titleRowBackgroundLightningBrightLong 1.4s ease-out;
+}
+
+.title-row.lightning-bright-long h1 {
+    animation: titleTextLightningBrightLong 1.4s ease-out;
+}
+
+.title-row.lightning-bright-long .weather-icon {
+    animation: weatherIconLightningBrightLong 1.4s ease-out;
+}
+
+.title-row.lightning-bright-long #waveform-container {
+    animation: waveformLightningBrightFrontLong 1.4s ease-out;
+}
+
+.title-row.lightning-bright-back-long {
+    animation: titleRowLightningBrightBackLong 1.4s ease-out;
+}
+
+.title-row.lightning-bright-back-long #waveform-container {
+    animation: waveformLightningBrightBackLong 1.4s ease-out;
+}
+
+@keyframes titleRowBackgroundLightningBrightLong {
+    0% {
+        background: transparent;
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+    }
+    12% {
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 calc(90px * var(--glow-intensity)) rgba(255, 255, 255, 1), inset 0 0 calc(50px * var(--glow-intensity)) rgba(255, 255, 255, 0.8);
+    }
+    32% {
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 0 calc(70px * var(--glow-intensity)) rgba(255, 255, 255, 0.85), inset 0 0 calc(35px * var(--glow-intensity)) rgba(255, 255, 255, 0.55);
+    }
+    60% {
+        background: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 0 calc(45px * var(--glow-intensity)) rgba(255, 255, 255, 0.45);
+    }
+    100% {
+        background: transparent;
+        box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
+    }
+}
+
+@keyframes titleRowLightningBrightBackLong {
+    0% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+    12% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 calc(90px * var(--glow-intensity)) rgba(255, 255, 255, 1), inset 0 0 calc(50px * var(--glow-intensity)) rgba(255, 255, 255, 0.65);
+    }
+    32% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 calc(70px * var(--glow-intensity)) rgba(255, 255, 255, 0.8), inset 0 0 calc(35px * var(--glow-intensity)) rgba(255, 255, 255, 0.45);
+    }
+    60% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 calc(45px * var(--glow-intensity)) rgba(255, 255, 255, 0.4), inset 0 0 calc(22px * var(--glow-intensity)) rgba(255, 255, 255, 0.18);
+    }
+    100% {
+        background: rgb(0, 0, 0);
+        box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+@keyframes titleTextLightningBrightLong {
+    0% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px var(--secondary-accent);
+        color: var(--secondary-accent);
+    }
+    12% {
+        text-shadow: 0 0 calc(35px * var(--glow-intensity)) white, 0 0 calc(60px * var(--glow-intensity)) rgba(255, 255, 255, 0.85);
+        color: white;
+    }
+    32% {
+        text-shadow: 0 0 calc(25px * var(--glow-intensity)) rgba(255, 255, 255, 0.65), 0 0 calc(45px * var(--glow-intensity)) rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.92);
+    }
+    60% {
+        text-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.55);
+    }
+    85% {
+        text-shadow: 0 0 calc(12px * var(--glow-intensity)) rgba(255, 255, 255, 0.18);
+        color: rgba(255, 255, 255, 0.32);
+    }
+    100% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px var(--secondary-accent);
+        color: var(--secondary-accent);
+    }
+}
+
+@keyframes weatherIconLightningBrightLong {
+    0% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+        color: var(--secondary-accent);
+    }
+    12% {
+        text-shadow: 0 0 calc(35px * var(--glow-intensity)) white, 0 0 calc(60px * var(--glow-intensity)) rgba(255, 255, 255, 0.85);
+        color: white;
+    }
+    32% {
+        text-shadow: 0 0 calc(25px * var(--glow-intensity)) rgba(255, 255, 255, 0.65);
+        color: rgba(255, 255, 255, 0.92);
+    }
+    60% {
+        text-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.55);
+    }
+    85% {
+        text-shadow: 0 0 calc(12px * var(--glow-intensity)) rgba(255, 255, 255, 0.18);
+        color: rgba(255, 255, 255, 0.32);
+    }
+    100% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+        color: var(--secondary-accent);
+    }
+}
+
+@keyframes waveformLightningBrightFrontLong {
+    0% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+    12% {
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: inset 0 0 calc(45px * var(--glow-intensity)) rgba(255, 255, 255, 0.85), 0 0 calc(70px * var(--glow-intensity)) rgba(255, 255, 255, 1);
+    }
+    32% {
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: inset 0 0 calc(32px * var(--glow-intensity)) rgba(255, 255, 255, 0.55), 0 0 calc(50px * var(--glow-intensity)) rgba(255, 255, 255, 0.65);
+    }
+    60% {
+        background: rgba(255, 255, 255, 0.35);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.25), 0 0 calc(30px * var(--glow-intensity)) rgba(255, 255, 255, 0.35);
+    }
+    85% {
+        background: rgba(255, 255, 255, 0.18);
+        box-shadow: inset 0 0 calc(14px * var(--glow-intensity)) rgba(255, 255, 255, 0.15), 0 0 calc(18px * var(--glow-intensity)) rgba(255, 255, 255, 0.22);
+    }
+    100% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+}
+
+@keyframes waveformLightningBrightBackLong {
+    0% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+    12% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(45px * var(--glow-intensity)) rgba(255, 255, 255, 0.65), 0 0 calc(70px * var(--glow-intensity)) rgba(255, 255, 255, 0.95);
+    }
+    32% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(32px * var(--glow-intensity)) rgba(255, 255, 255, 0.45), 0 0 calc(50px * var(--glow-intensity)) rgba(255, 255, 255, 0.65);
+    }
+    60% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.24), 0 0 calc(30px * var(--glow-intensity)) rgba(255, 255, 255, 0.32);
+    }
+    85% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(14px * var(--glow-intensity)) rgba(255, 255, 255, 0.14), 0 0 calc(18px * var(--glow-intensity)) rgba(255, 255, 255, 0.2);
+    }
+    100% {
+        background: rgb(0, 0, 0);
+        box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    }
+}
+
 h1 {
     text-align: center;
     margin: 0;
@@ -827,28 +1321,43 @@ h1 {
     text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px var(--secondary-accent);
     flex: 1;
     padding-right: 10px;
+    position: relative;
+    z-index: 10; /* Above waveform background */
+}
+
+/* When title-row is sticky, make h1 text appear above the waveform */
+.title-row.sticky-active h1 {
+    z-index: 9997; /* Above sticky waveform container (9995) */
 }
 
 /* Waveform Visualizer */
 #waveform-container {
     width: 100%;
-    height: 80px;
-    background: rgba(var(--secondary-accent-rgb), 0.05);
-    border: none; /* No separate border since it's inside the panel */
-    border-bottom: 2px solid var(--theme-color); /* Separator from dropdown below */
-    border-radius: 0;
-    margin-bottom: 0; /* No gap between waveform and dropdown */
-    box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 8px rgba(var(--secondary-accent-rgb), 0.15);
-    position: relative; /* Default position */
+    height: 100%;
+    background: rgb(0, 0, 0); /* Completely opaque black background */
+    border: 2px solid var(--theme-color);
+    border-radius: 4px;
+    box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow: hidden;
+    pointer-events: none; /* Allow clicks to pass through to title */
+    box-sizing: border-box;
+    z-index: 0; /* Behind title content */
 }
 
-/* Make waveform sticky only when OSC panel is open */
-#osc-panel[open] ~ #music-controls-always-visible #waveform-container,
-.music-player-panel:has(#osc-panel[open]) #waveform-container {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+/* Make waveform fixed and sticky when both Settings and OSC are open */
+#waveform-container.sticky-active {
+    position: fixed;
+    top: 0 !important;
+    left: 20px;
+    right: 20px;
+    width: calc(100% - 40px);
+    height: calc(1.5em + 32px + 4px); /* Match title height */
+    z-index: 9995;
 }
 
 #waveform {
@@ -858,15 +1367,7 @@ h1 {
 }
 
 .waveform-label {
-    position: absolute;
-    top: 4px;
-    left: 8px;
-    color: var(--secondary-accent);
-    font-size: 0.7em;
-    text-shadow: 0 0 calc(5px * var(--glow-intensity)) var(--secondary-accent);
-    font-family: 'Share Tech Mono', monospace;
-    pointer-events: none;
-    z-index: 10;
+    display: none; /* Hidden when used as title background */
 }
 
 /* Rain emoji animations removed - no longer needed */
@@ -891,8 +1392,14 @@ h1 {
     -ms-user-select: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
+    z-index: 10; /* Above waveform background */
     /* Force monochrome emoji with theme color - subtle outline */
     filter: brightness(0) drop-shadow(0 0 0 var(--secondary-accent)) drop-shadow(0 0 2px var(--secondary-accent));
+}
+
+/* When title-row is sticky, make weather icon appear above the waveform */
+.title-row.sticky-active .weather-icon {
+    z-index: 9997; /* Above sticky waveform container (9995) */
 }
 
 /* Legacy storm-icon styles removed */
@@ -1360,6 +1867,78 @@ button:disabled {
     margin-bottom: 12px;
 }
 
+#music-volume-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+#music-volume-section label {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 8px;
+    align-items: center;
+    font-size: 0.8em;
+    line-height: 1.2;
+}
+
+#musicVolume {
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, 
+        rgba(var(--secondary-accent-rgb), 0.5) 0%, 
+        rgba(var(--secondary-accent-rgb), 0.5) var(--volume-percent, 100%), 
+        rgba(0, 0, 0, 0.4) var(--volume-percent, 100%), 
+        rgba(0, 0, 0, 0.4) 100%);
+    border-radius: 3px;
+    outline: none;
+    border: 1px solid rgba(var(--theme-color-rgb), 0.3);
+    cursor: pointer;
+}
+
+#musicVolume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--secondary-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 calc(6px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8);
+    transition: all 0.2s ease;
+}
+
+#musicVolume::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 1);
+}
+
+#musicVolume::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--secondary-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 calc(6px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8);
+    transition: all 0.2s ease;
+}
+
+#musicVolume::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 1);
+}
+
+#musicVolumeLabel {
+    font-size: 0.85em;
+    color: var(--secondary-accent);
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
+    min-width: 30px;
+    text-align: right;
+}
+
 #trackPosition {
     width: 100%;
     height: 6px;
@@ -1439,7 +2018,7 @@ button:disabled {
 
 .osc-mode-buttons {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 8px;
     margin-bottom: 8px;
 }
