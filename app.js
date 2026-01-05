@@ -267,8 +267,8 @@ function showLightningIcon() {
     
     const titleRow = document.querySelector('.title-row');
     const lightningMode = document.getElementById('oscLightningMode')?.value || 'off';
-    const isLongFade = ['outline-long', 'invert-long', 'bright-long', 'bright-back-long'].includes(lightningMode);
-    const flashDuration = isLongFade ? 1400 : 180;
+    const useLongFlash = Math.random() < 0.2; // lower chance for long fades but still possible in any mode
+    const flashDuration = useLongFlash ? 1400 : 180;
     
     // Show lightning bolt overlay on cloud
     const originalIcon = weatherIcon.textContent;
@@ -276,32 +276,32 @@ function showLightningIcon() {
 
     // Helper to apply chosen visual mode
     const applyFlash = () => {
-        if (lightningMode === 'invert' || lightningMode === 'invert-long') {
+        if (lightningMode === 'invert') {
             if (titleRow) {
-                if (lightningMode === 'invert-long') {
+                if (useLongFlash) {
                     titleRow.classList.add('lightning-invert-long');
                 } else {
                     titleRow.classList.add('lightning-invert');
                 }
             }
-        } else if (lightningMode === 'bright' || lightningMode === 'bright-long') {
+        } else if (lightningMode === 'bright') {
             if (titleRow) {
-                if (lightningMode === 'bright-long') {
+                if (useLongFlash) {
                     titleRow.classList.add('lightning-bright-long');
                 } else {
                     titleRow.classList.add('lightning-bright');
                 }
             }
-        } else if (lightningMode === 'bright-back' || lightningMode === 'bright-back-long') {
+        } else if (lightningMode === 'bright-back') {
             if (titleRow) {
-                if (lightningMode === 'bright-back-long') {
+                if (useLongFlash) {
                     titleRow.classList.add('lightning-bright-back-long');
                 } else {
                     titleRow.classList.add('lightning-bright-back');
                 }
             }
-        } else if (lightningMode === 'outline' || lightningMode === 'outline-long') {
-            if (lightningMode === 'outline-long') {
+        } else if (lightningMode === 'outline') {
+            if (useLongFlash) {
                 weatherIcon.classList.add('lightning-long');
             } else {
                 weatherIcon.classList.add('lightning');
@@ -323,9 +323,9 @@ function showLightningIcon() {
         }
     };
 
-    // Decide random flash pattern: 1, 2 quick, or 3 irregular
+    // Decide random flash pattern: long flashes are single; short flashes follow random burst
     const patternRoll = Math.random();
-    const flashes = isLongFade ? 1 : (patternRoll < 0.5 ? 1 : patternRoll < 0.8 ? 2 : 3);
+    const flashes = useLongFlash ? 1 : (patternRoll < 0.5 ? 1 : patternRoll < 0.8 ? 2 : 3);
 
     let currentTime = 0;
     for (let i = 0; i < flashes; i++) {
