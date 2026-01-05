@@ -43,12 +43,15 @@ const musicLowpassNode = audioCtx.createBiquadFilter();
 const musicReverbNode = audioCtx.createConvolver();
 const musicWetGain = audioCtx.createGain();
 const musicDryGain = audioCtx.createGain();
+const musicReverbBass = audioCtx.createBiquadFilter();
 const rainReverbNode = audioCtx.createConvolver();
 const rainWetGain = audioCtx.createGain();
 const rainDryGain = audioCtx.createGain();
+const rainReverbBass = audioCtx.createBiquadFilter();
 const thunderReverbNode = audioCtx.createConvolver();
 const thunderWetGain = audioCtx.createGain();
 const thunderDryGain = audioCtx.createGain();
+const thunderReverbBass = audioCtx.createBiquadFilter();
 
 // Radio-style EQ nodes for vintage sound
 const musicEQBass = audioCtx.createBiquadFilter();
@@ -90,6 +93,15 @@ rainEQNode.Q.value = 1.2;
 rainEQNode.gain.value = 0;
 musicLowpassNode.type = 'lowpass';
 musicLowpassNode.frequency.value = 22050;
+musicReverbBass.type = 'lowshelf';
+musicReverbBass.frequency.value = 160;
+musicReverbBass.gain.value = 0;
+rainReverbBass.type = 'lowshelf';
+rainReverbBass.frequency.value = 180;
+rainReverbBass.gain.value = 0;
+thunderReverbBass.type = 'lowshelf';
+thunderReverbBass.frequency.value = 140;
+thunderReverbBass.gain.value = 0;
 
 // Default volumes (will be set from sliders on page load)
 rainGainNode.gain.value = 0.25;
@@ -101,13 +113,13 @@ rainGainNode.connect(rainEQNode);
 rainEQNode.connect(lowpassFilterNode);
 // Rain reverb routing: split to wet (reverb) and dry paths BEFORE the shared lowpass
 rainEQNode.connect(rainDryGain).connect(lowpassFilterNode);
-rainEQNode.connect(rainReverbNode).connect(rainWetGain).connect(lowpassFilterNode);
+rainEQNode.connect(rainReverbNode).connect(rainWetGain).connect(rainReverbBass).connect(lowpassFilterNode);
 // Final rain output goes through lowpass to analyzer and destination
 lowpassFilterNode.connect(analyser);
 
 // Thunder reverb routing: thunder has its own reverb chain, then goes through lowpass
 thunderGainNode.connect(thunderDryGain).connect(lowpassFilterNode);
-thunderGainNode.connect(thunderReverbNode).connect(thunderWetGain).connect(lowpassFilterNode);
+thunderGainNode.connect(thunderReverbNode).connect(thunderWetGain).connect(thunderReverbBass).connect(lowpassFilterNode);
 
 birdsGainNode.connect(lowpassFilterNode);
 
@@ -118,7 +130,7 @@ musicEQMid.connect(musicEQMidTreble);
 musicEQMidTreble.connect(musicEQTreble);
 musicEQTreble.connect(musicLowpassNode);
 musicLowpassNode.connect(musicDryGain).connect(analyser);
-musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(analyser);
+musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser);
 
 // Sound paths
 const RAIN_SOUND = 'sounds/rain/rain-sound-188158.mp3';
@@ -269,6 +281,7 @@ function showLightningIcon() {
     const lightningMode = document.getElementById('oscLightningMode')?.value || 'off';
     const useLongFlash = Math.random() < 0.2; // lower chance for long fades but still possible in any mode
     const flashDuration = useLongFlash ? 1400 : 180;
+    const body = document.body;
     
     // Show lightning bolt overlay on cloud
     const originalIcon = weatherIcon.textContent;
@@ -306,6 +319,11 @@ function showLightningIcon() {
             } else {
                 weatherIcon.classList.add('lightning');
             }
+        } else if (lightningMode === 'background') {
+            if (body) {
+                const className = useLongFlash ? 'flash-background-long' : 'flash-background';
+                body.classList.add(className);
+            }
         }
     };
 
@@ -313,6 +331,10 @@ function showLightningIcon() {
     const clearFlash = () => {
         weatherIcon.classList.remove('lightning');
         weatherIcon.classList.remove('lightning-long');
+        if (body) {
+            body.classList.remove('flash-background');
+            body.classList.remove('flash-background-long');
+        }
         if (titleRow) {
             titleRow.classList.remove('lightning-invert');
             titleRow.classList.remove('lightning-invert-long');
@@ -2149,12 +2171,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
     
     const musicReverbLabel = document.getElementById('musicReverbLabel');
+
+    function setReverbBassBoost(mix, filterNode, maxDb) {
+        const clamped = Math.min(Math.max(mix, 0), 1);
+        filterNode.gain.value = clamped * maxDb;
+    }
     
     musicReverbSlider.addEventListener('input', () => {
         const mix = parseFloat(musicReverbSlider.value);
         musicWetGain.gain.value = mix;
         musicDryGain.gain.value = 1 - mix;
         musicReverbLabel.textContent = mix.toFixed(2);
+        setReverbBassBoost(mix, musicReverbBass, 7);
     });
     
     const rainReverbLabel = document.getElementById('rainReverbLabel');
@@ -2164,6 +2192,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         rainWetGain.gain.value = mix;
         rainDryGain.gain.value = 1 - mix;
         rainReverbLabel.textContent = mix.toFixed(2);
+        setReverbBassBoost(mix, rainReverbBass, 6);
     });
     
     const thunderReverbLabel = document.getElementById('thunderReverbLabel');
@@ -2173,6 +2202,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         thunderWetGain.gain.value = mix;
         thunderDryGain.gain.value = 1 - mix;
         thunderReverbLabel.textContent = mix.toFixed(2);
+        setReverbBassBoost(mix, thunderReverbBass, 12);
     });
     
     const musicRoomSizeLabel = document.getElementById('musicRoomSizeLabel');

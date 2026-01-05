@@ -705,6 +705,40 @@ body {
     scrollbar-width: none;  /* Firefox */
 }
 
+#background-flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 60%), rgba(255, 255, 255, 0.4);
+    mix-blend-mode: screen;
+    opacity: 0;
+    z-index: 10000; /* Above scanlines/flicker and panels for visible flash */
+}
+
+body.flash-background #background-flash {
+    animation: backgroundFlashShort 0.8s ease-out;
+}
+
+body.flash-background-long #background-flash {
+    animation: backgroundFlashLong 1.6s ease-out;
+}
+
+@keyframes backgroundFlashShort {
+    0% { opacity: 0; }
+    12% { opacity: 1; }
+    36% { opacity: 0.55; }
+    70% { opacity: 0.18; }
+    100% { opacity: 0; }
+}
+
+@keyframes backgroundFlashLong {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    30% { opacity: 0.6; }
+    60% { opacity: 0.3; }
+    100% { opacity: 0; }
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 body::-webkit-scrollbar {
     display: none;
@@ -764,6 +798,7 @@ body::after {
     box-shadow: 0 0 calc(40px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4), inset 0 0 30px rgba(0, 0, 0, 0.9);
     border: none;
     position: relative;
+    z-index: 1; /* Keep above background flash layer */
     box-sizing: border-box;
     overflow-y: auto;
 }
@@ -774,6 +809,7 @@ body::after {
     margin-bottom: 16px;
     justify-content: center;
     padding: 16px 70px 16px 10px;
+    min-height: calc(1.5em + 32px + 4px);
     background: transparent;
     border: 2px solid var(--theme-color);
     border-radius: 4px;
@@ -1319,9 +1355,11 @@ h1 {
     letter-spacing: 2px;
     font-size: 1.5em;
     text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent), 0 0 20px var(--secondary-accent);
-    flex: 1;
-    padding-right: 10px;
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 140px); /* leave space for the right-side icon */
     z-index: 10; /* Above waveform background */
 }
 
@@ -1377,6 +1415,7 @@ h1 {
     height: 50px;
     flex-shrink: 0;
     position: absolute;
+    top: 50%;
     right: 15px;
     font-size: 2.5em;
     display: flex;
@@ -1393,6 +1432,7 @@ h1 {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     z-index: 10; /* Above waveform background */
+    transform: translateY(-50%);
     /* Force monochrome emoji with theme color - subtle outline */
     filter: brightness(0) drop-shadow(0 0 0 var(--secondary-accent)) drop-shadow(0 0 2px var(--secondary-accent));
 }
