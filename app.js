@@ -53,6 +53,16 @@ const thunderWetGain = audioCtx.createGain();
 const thunderDryGain = audioCtx.createGain();
 const thunderReverbBass = audioCtx.createBiquadFilter();
 
+// 3D Spatial audio nodes
+const musicPannerNode = audioCtx.createStereoPanner();
+musicPannerNode.pan.value = 0;
+
+// Store base values for spatial audio adjustments
+let baseMidEQ = 0;
+let baseMusicReverb = 0.3;
+let isSpatialUpdate = false; // Flag to prevent listener from updating baseMidEQ during spatial updates
+let isUserDraggingSlider = false; // Track if user is actively dragging the slider
+
 // Radio-style EQ nodes for vintage sound
 const musicEQBass = audioCtx.createBiquadFilter();
 const musicEQMidBass = audioCtx.createBiquadFilter();
@@ -129,8 +139,9 @@ musicEQMidBass.connect(musicEQMid);
 musicEQMid.connect(musicEQMidTreble);
 musicEQMidTreble.connect(musicEQTreble);
 musicEQTreble.connect(musicLowpassNode);
-musicLowpassNode.connect(musicDryGain).connect(analyser);
-musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser);
+// Add spatial audio chain: split BEFORE panner so reverb stays centered
+musicLowpassNode.connect(musicPannerNode).connect(musicDryGain).connect(analyser); // Dry signal is panned
+musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser); // Reverb is NOT panned (room ambience)
 
 // Sound paths
 const RAIN_SOUND = 'sounds/rain/rain-sound-188158.mp3';
@@ -440,7 +451,7 @@ function applyPreset(presetName) {
         rainVolumeSlider.value = 1;
         thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
-        musicVolumeSlider.value = 100;
+        // Keep current music volume - don't override with preset
         musicLowpassSlider.value = 22050; // Max - no filtering on music
         musicRoomSizeSlider.value = 0.02; // Very small room
         musicReverbSlider.value = 0.30; // Updated reverb mix
@@ -454,7 +465,7 @@ function applyPreset(presetName) {
         rainVolumeSlider.value = 0.5;
         thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 22050; // Max - no filtering
-        musicVolumeSlider.value = 100; // Full volume
+        // Keep current music volume - don't override with preset
         musicLowpassSlider.value = 22050; // Max - no filtering
         musicRoomSizeSlider.value = 0.02; // Small room
         musicReverbSlider.value = 0; // No reverb
@@ -1721,7 +1732,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     rainVolumeSlider.value = 0;
     thunderVolumeSlider.value = 1;
     lowpassFilterSlider.value = 22050;
-    musicVolumeSlider.value = 100;
+    
+    // Load saved music volume from localStorage, or use default
+    const savedMusicVolume = localStorage.getItem('stormgen-music-volume');
+    musicVolumeSlider.value = savedMusicVolume !== null ? savedMusicVolume : 100;
+    
     musicLowpassSlider.value = 22050;
     musicRoomSizeSlider.value = 0.02;
     musicReverbSlider.value = 0;
@@ -1748,14 +1763,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     thunderWetGain.gain.value = 0;
     thunderDryGain.gain.value = 1;
     
-    // Update all labels to match Outdoor preset
-    document.getElementById('lowpassLabel').textContent = '22050 Hz';
-    document.getElementById('musicLowpassLabel').textContent = '22050 Hz';
-    document.getElementById('musicRoomSizeLabel').textContent = '0.020';
-    document.getElementById('musicReverbLabel').textContent = '0.00';
-    document.getElementById('rainReverbLabel').textContent = '0.00';
-    document.getElementById('thunderReverbLabel').textContent = '0.00';
-    document.getElementById('frequencyLabel').textContent = '5-60s';
+    // Labels will be updated by the dispatchEvent calls above
     
     // ===== WEATHER PRESET BUTTONS =====
     const presetIndoorCozyBtn = document.getElementById('presetIndoorCozy');
@@ -2072,8 +2080,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (eqMidSlider) {
         eqMidSlider.addEventListener('input', () => {
             const gain = parseFloat(eqMidSlider.value);
-            musicEQMid.gain.value = gain;
-            if (eqMidLabel) eqMidLabel.textContent = gain.toFixed(1) + ' dB';
+            baseMidEQ = gain; // Update base value
+            
+            // Re-apply spatial audio to add the spatial occlusion on top of new base
+            if (spatialHandle) {
+                const x = parseFloat(spatialHandle.getAttribute('cx'));
+                const y = parseFloat(spatialHandle.getAttribute('cy'));
+                updateSpatialAudio(x, y);
+            } else {
+                // If no spatial handle, just update the audio node directly
+                musicEQMid.gain.value = gain;
+                if (eqMidLabel) eqMidLabel.textContent = gain.toFixed(1) + ' dB';
+            }
         });
     }
     
@@ -2146,6 +2164,9 @@ window.addEventListener('DOMContentLoaded', async () => {
                 playbackVolumeLabel.textContent = musicVolumeSlider.value;
             }
         }
+        
+        // Save music volume to localStorage
+        localStorage.setItem('stormgen-music-volume', musicVolumeSlider.value);
     });
     
     // Sync playback volume slider with main music volume slider
@@ -2159,6 +2180,8 @@ window.addEventListener('DOMContentLoaded', async () => {
             if (playbackVolumeLabel) {
                 playbackVolumeLabel.textContent = value;
             }
+            // Save music volume to localStorage
+            localStorage.setItem('stormgen-music-volume', value);
         });
     }
     
@@ -2176,13 +2199,31 @@ window.addEventListener('DOMContentLoaded', async () => {
         const clamped = Math.min(Math.max(mix, 0), 1);
         filterNode.gain.value = clamped * maxDb;
     }
+
+    function updateMusicReverbMix(mix, fromSpatial = false) {
+        const clamped = Math.min(Math.max(mix, 0), 1);
+        musicWetGain.gain.value = clamped;
+        musicDryGain.gain.value = 1 - clamped;
+        musicReverbLabel.textContent = clamped.toFixed(2);
+        setReverbBassBoost(clamped, musicReverbBass, 7);
+
+        // Only move the slider when user adjusts it (not when spatial controller drives it)
+        if (!fromSpatial) {
+            musicReverbSlider.value = clamped;
+            baseMusicReverb = clamped;
+        }
+    }
     
     musicReverbSlider.addEventListener('input', () => {
         const mix = parseFloat(musicReverbSlider.value);
-        musicWetGain.gain.value = mix;
-        musicDryGain.gain.value = 1 - mix;
-        musicReverbLabel.textContent = mix.toFixed(2);
-        setReverbBassBoost(mix, musicReverbBass, 7);
+        baseMusicReverb = mix; // Update base value
+        
+        // Re-apply spatial audio to add the spatial reverb boost on top of new base
+        if (spatialHandle) {
+            const x = parseFloat(spatialHandle.getAttribute('cx'));
+            const y = parseFloat(spatialHandle.getAttribute('cy'));
+            updateSpatialAudio(x, y);
+        }
     });
     
     const rainReverbLabel = document.getElementById('rainReverbLabel');
@@ -2222,6 +2263,165 @@ window.addEventListener('DOMContentLoaded', async () => {
         thunderReverbNode.buffer = createImpulseResponse(2, decay);
         musicRoomSizeLabel.textContent = sliderValue.toFixed(3);
     });
+    
+    // ===== 3D SPATIAL AUDIO CONTROLLER =====
+    const spatialHandle = document.getElementById('spatial-handle');
+    const spatialHandleInner = document.querySelector('.spatial-handle-inner');
+    const spatialSVG = document.getElementById('spatial-controller-svg');
+    const spatialPanValue = document.getElementById('spatialPanValue');
+    const spatialFilterValue = document.getElementById('spatialFilterValue');
+    
+    let isDragging = false;
+    const centerX = 100;
+    const centerY = 100;
+    const radius = 85;
+    
+    // Update spatial audio based on handle position
+    function updateSpatialAudio(x, y) {
+        // Calculate pan from X position (-1 to 1)
+        const normalizedX = (x - centerX) / radius;
+        const pan = Math.max(-1, Math.min(1, normalizedX));
+        musicPannerNode.pan.value = pan;
+        
+        // Calculate mid EQ offset from Y position
+        // Mapping (with occlusionAmount as the magnitude scaler):
+        //   top    (y = -1): baseMidEQ + 0 dB
+        //   center (y =  0): baseMidEQ + 0 dB
+        //   bottom (y = +1): baseMidEQ - occlusion
+        const normalizedY = (y - centerY) / radius; // -1 at top, +1 at bottom
+        const maxOcclusionDb = 12; // maximum boost/cut in dB
+        const occDb = maxOcclusionDb;
+
+        // Only apply reduction for y >= 0 (center to bottom)
+        const clampedY = Math.max(0, normalizedY); // 0 to 1
+        const offset = -occDb * clampedY; // 0 at center/top, -occDb at bottom
+
+        const adjustedMidEQ = baseMidEQ + offset;
+
+        // Reverb mix driven by occlusion (Y-axis) and angular deviation from top
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const radial = Math.min(1, Math.sqrt(dx * dx + dy * dy) / radius);
+        const angle = Math.atan2(dy, dx); // -PI/2 at top
+        const topAngle = -Math.PI / 2;
+        const diffWrapped = ((angle - topAngle + Math.PI) % (2 * Math.PI)) - Math.PI; // minimal angle diff in [-PI, PI]
+        const angDev = Math.min(1, Math.abs(diffWrapped) / (Math.PI / 2)); // 0 at top, 1 by left/right (±90°)
+        // Faster ramp near top center: sqrt easing
+        const angFast = Math.sqrt(angDev);
+        // Gate by radial so the effect is strongest near the edge
+        let radialGate = (radial - 0.7) / 0.3; // maps 0.7→0 to 1.0→1.0
+        radialGate = Math.max(0, Math.min(1, radialGate));
+        const radialAngularReverb = radialGate * angFast * 0.35;
+        const occlusionReverb = clampedY * 0.35;
+        const spatialReverb = Math.min(1, baseMusicReverb + radialAngularReverb + occlusionReverb);
+        updateMusicReverbMix(spatialReverb, true);
+        
+        // Update audio node
+        musicEQMid.gain.value = adjustedMidEQ;
+        
+        // Do not move the Mid EQ slider visually; only show value in spatial info
+        if (eqMidLabel) {
+            eqMidLabel.textContent = adjustedMidEQ.toFixed(1) + ' dB';
+        }
+        
+        // Update UI labels
+        if (Math.abs(pan) < 0.1) {
+            spatialPanValue.textContent = 'Center';
+        } else if (pan < 0) {
+            spatialPanValue.textContent = `Left ${Math.abs(pan * 100).toFixed(0)}%`;
+        } else {
+            spatialPanValue.textContent = `Right ${(pan * 100).toFixed(0)}%`;
+        }
+        spatialFilterValue.textContent = `${adjustedMidEQ.toFixed(1)} dB`;
+    }
+    
+    // Constrain handle to circle boundary
+    function constrainToCircle(x, y) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > radius) {
+            const angle = Math.atan2(dy, dx);
+            return {
+                x: centerX + radius * Math.cos(angle),
+                y: centerY + radius * Math.sin(angle)
+            };
+        }
+        return { x, y };
+    }
+    
+    // Get mouse/touch position relative to SVG
+    function getPosition(evt) {
+        const rect = spatialSVG.getBoundingClientRect();
+        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+        
+        // Get the SVG's viewBox dimensions (0 0 200 200)
+        const svgRect = spatialSVG.viewBox.baseVal || spatialSVG.getBBox();
+        
+        // Convert client coordinates to SVG coordinates using the actual SVG dimensions
+        const x = ((clientX - rect.left) / rect.width) * 200;
+        const y = ((clientY - rect.top) / rect.height) * 200;
+        
+        return constrainToCircle(x, y);
+    }
+    
+    // Mouse/touch event handlers
+    function startDragging(evt) {
+        isDragging = true;
+        evt.preventDefault();
+        const pos = getPosition(evt);
+        spatialHandle.setAttribute('cx', pos.x);
+        spatialHandle.setAttribute('cy', pos.y);
+        spatialHandleInner.setAttribute('cx', pos.x);
+        spatialHandleInner.setAttribute('cy', pos.y);
+        updateSpatialAudio(pos.x, pos.y);
+    }
+    
+    function drag(evt) {
+        if (!isDragging) return;
+        evt.preventDefault();
+        const pos = getPosition(evt);
+        spatialHandle.setAttribute('cx', pos.x);
+        spatialHandle.setAttribute('cy', pos.y);
+        spatialHandleInner.setAttribute('cx', pos.x);
+        spatialHandleInner.setAttribute('cy', pos.y);
+        updateSpatialAudio(pos.x, pos.y);
+        
+        // Save spatial controller position
+        localStorage.setItem('stormgen-spatial-x', pos.x);
+        localStorage.setItem('stormgen-spatial-y', pos.y);
+    }
+    
+    function stopDragging() {
+        isDragging = false;
+    }
+    
+    // Add event listeners for mouse
+    spatialHandle.addEventListener('mousedown', startDragging);
+    spatialSVG.addEventListener('mousedown', startDragging);
+    window.addEventListener('mousemove', drag);
+    window.addEventListener('mouseup', stopDragging);
+    
+    // Add event listeners for touch
+    spatialHandle.addEventListener('touchstart', startDragging);
+    spatialSVG.addEventListener('touchstart', startDragging);
+    window.addEventListener('touchmove', drag);
+    window.addEventListener('touchend', stopDragging);
+    
+    // Occlusion slider removed: occlusion strength now driven purely by vertical position
+    
+    // Initialize: sync base values with current sliders before first update
+    if (eqMidSlider) {
+        baseMidEQ = parseFloat(eqMidSlider.value);
+    }
+    if (musicReverbSlider) {
+        baseMusicReverb = parseFloat(musicReverbSlider.value);
+    }
+    
+    // Initialize position at center (neutral pan, no mid reduction, baseline reverb)
+    updateSpatialAudio(100, 100);
     
     const stormIcon = weatherIcon; // Use weather icon for click interaction
     if (stormIcon) {
@@ -2418,17 +2618,34 @@ window.addEventListener('DOMContentLoaded', async () => {
     const oscOpacitySlider = document.getElementById('oscOpacity');
     const oscOpacityLabel = document.getElementById('oscOpacityLabel');
     if (oscOpacitySlider) {
+        // Load saved waveform visibility
+        const savedWaveformOpacity = localStorage.getItem('stormgen-waveform-opacity');
+        if (savedWaveformOpacity) {
+            oscOpacitySlider.value = savedWaveformOpacity;
+        }
+        
         oscOpacitySlider.addEventListener('input', () => {
             const value = parseFloat(oscOpacitySlider.value);
             oscSettings.lineOpacity = value;
             oscOpacityLabel.textContent = Math.round(value * 100) + '%';
+            // Save waveform visibility
+            localStorage.setItem('stormgen-waveform-opacity', value);
         });
+        
+        // Initialize label
+        oscOpacityLabel.textContent = Math.round(parseFloat(oscOpacitySlider.value) * 100) + '%';
     }
     
     // Title Visibility
     const oscTitleOpacitySlider = document.getElementById('oscTitleOpacity');
     const oscTitleOpacityLabel = document.getElementById('oscTitleOpacityLabel');
     if (oscTitleOpacitySlider) {
+        // Load saved title visibility
+        const savedTitleOpacity = localStorage.getItem('stormgen-title-opacity');
+        if (savedTitleOpacity) {
+            oscTitleOpacitySlider.value = savedTitleOpacity;
+        }
+        
         oscTitleOpacitySlider.addEventListener('input', () => {
             const value = parseFloat(oscTitleOpacitySlider.value);
             const titleText = document.querySelector('.title-row h1');
@@ -2440,7 +2657,21 @@ window.addEventListener('DOMContentLoaded', async () => {
                 weatherIcon.style.opacity = value;
             }
             oscTitleOpacityLabel.textContent = Math.round(value * 100) + '%';
+            // Save title visibility
+            localStorage.setItem('stormgen-title-opacity', value);
         });
+        
+        // Initialize visibility on load
+        const titleText = document.querySelector('.title-row h1');
+        const weatherIcon = document.querySelector('.weather-icon');
+        const titleOpacityValue = parseFloat(oscTitleOpacitySlider.value);
+        if (titleText) {
+            titleText.style.opacity = titleOpacityValue;
+        }
+        if (weatherIcon) {
+            weatherIcon.style.opacity = titleOpacityValue;
+        }
+        oscTitleOpacityLabel.textContent = Math.round(titleOpacityValue * 100) + '%';
     }
     
     // Fade trail
@@ -2486,6 +2717,17 @@ window.addEventListener('DOMContentLoaded', async () => {
             // No need to store in oscSettings as it's a visual effect
         });
     }
+    
+    // Trigger all input events to update audio nodes and labels with current values
+    rainVolumeSlider.dispatchEvent(new Event('input'));
+    thunderVolumeSlider.dispatchEvent(new Event('input'));
+    lowpassFilterSlider.dispatchEvent(new Event('input'));
+    musicVolumeSlider.dispatchEvent(new Event('input'));
+    musicLowpassSlider.dispatchEvent(new Event('input'));
+    musicRoomSizeSlider.dispatchEvent(new Event('input'));
+    musicReverbSlider.dispatchEvent(new Event('input'));
+    rainReverbSlider.dispatchEvent(new Event('input'));
+    thunderReverbSlider.dispatchEvent(new Event('input'));
     
     // Initialize all slider fills
     initializeAllSliderFills();

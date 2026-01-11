@@ -2109,4 +2109,105 @@ button:disabled {
     accent-color: var(--secondary-accent);
 }
 
+/* ============================================
+   3D SPATIAL AUDIO CONTROLLER
+   ============================================ */
+#spatial-controller-section {
+    margin: 20px 0;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(var(--secondary-accent-rgb), 0.3);
+    border-radius: 6px;
+}
+
+#spatial-controller-section > label {
+    display: block;
+    text-align: center;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: var(--secondary-accent);
+    text-shadow: 0 0 calc(8px * var(--glow-intensity)) var(--secondary-accent);
+}
+
+#spatial-controller-container {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto 16px;
+    aspect-ratio: 1;
+}
+
+#spatial-controller-svg {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    user-select: none;
+}
+
+.spatial-circle-bg {
+    fill: rgba(0, 0, 0, 0.5);
+    stroke: var(--theme-color);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 calc(8px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.5));
+}
+
+.spatial-guide {
+    stroke: rgba(var(--theme-color-rgb), 0.3);
+    stroke-width: 1;
+    stroke-dasharray: 4, 4;
+}
+
+.spatial-label {
+    fill: var(--theme-color);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    text-shadow: 0 0 calc(4px * var(--glow-intensity)) var(--theme-color);
+    pointer-events: none;
+}
+
+.spatial-handle {
+    fill: var(--secondary-accent);
+    stroke: var(--theme-color);
+    stroke-width: 2;
+    cursor: grab;
+    filter: drop-shadow(0 0 calc(12px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8));
+    transition: filter 0.2s;
+}
+
+.spatial-handle:hover,
+.spatial-handle:active {
+    filter: drop-shadow(0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 1));
+}
+
+.spatial-handle:active {
+    cursor: grabbing;
+}
+
+.spatial-handle-inner {
+    fill: var(--theme-color);
+    pointer-events: none;
+    filter: drop-shadow(0 0 calc(6px * var(--glow-intensity)) var(--theme-color));
+}
+
+.spatial-info {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 12px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--theme-color);
+}
+
+.spatial-info span {
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.spatial-info span span {
+    color: var(--secondary-accent);
+    font-weight: bold;
+}
+
+
 
