@@ -62,6 +62,13 @@ const spatialDryLowpass = audioCtx.createBiquadFilter();
 spatialDryLowpass.type = 'lowpass';
 spatialDryLowpass.frequency.value = 22050; // Start with no filtering
 
+// Spatial head-shadow bass shelf (scooped sound when behind listener)
+// Boosts bass to create U-shaped EQ curve (scooped mids) for behind-the-head effect
+const spatialDryBassShelf = audioCtx.createBiquadFilter();
+spatialDryBassShelf.type = 'highshelf';
+spatialDryBassShelf.frequency.value = 200; // Low end shelf
+spatialDryBassShelf.gain.value = 0; // Start with no boost
+
 // Spatial head-shadow lowpass for reverb path (same settings as dry)
 const spatialWetLowpass = audioCtx.createBiquadFilter();
 spatialWetLowpass.type = 'lowpass';
@@ -157,14 +164,17 @@ musicEQBass.connect(musicEQMidBass);
 musicEQMidBass.connect(musicEQMid);
 musicEQMid.connect(musicEQMidTreble);
 musicEQMidTreble.connect(musicEQTreble);
-musicEQTreble.connect(musicLowpassNode);
-// Spatial audio routing: DRY path gets spatial head-shadow lowpass, REVERB stays bright (natural room reflections)
-// Dry path: user lowpass -> panner -> spatial dry lowpass -> dry gain (with directional mid attenuation)
-musicLowpassNode.connect(musicPannerNode);
+
+// Split after EQ: DRY and WET paths split here with NO shared spatial processing
+// Dry path: EQ -> panner -> spatial dry lowpass -> spatial bass shelf -> dry gain
+// Wet path: EQ -> reverb -> wet gain -> reverb bass (original unprocessed signal for room reflections)
+musicEQTreble.connect(musicPannerNode);
 musicPannerNode.connect(spatialDryLowpass);
-spatialDryLowpass.connect(musicDryGain).connect(analyser);
-// Reverb path: user lowpass -> reverb -> wet gain -> reverb bass -> analyser (NO spatial lowpass)
-musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser);
+spatialDryLowpass.connect(spatialDryBassShelf);
+spatialDryBassShelf.connect(musicDryGain).connect(analyser);
+
+// Reverb path: EQ (unprocessed by spatial filters) -> reverb -> wet gain -> reverb bass -> analyser
+musicEQTreble.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser);
 
 // Sound paths
 const RAIN_SOUND = 'sounds/rain/rain-sound-188158.mp3';
@@ -715,6 +725,11 @@ function playDefaultMusic() {
     const playPauseBtn = document.getElementById('musicPlayPauseBtn');
     if (playPauseBtn) playPauseBtn.textContent = '⏸ Pause';
     
+    // Apply current spatial settings to new track
+    if (typeof window.applySpatialFromHandle === 'function') {
+        window.applySpatialFromHandle();
+    }
+    
     // Update current track display
     updateCurrentTrackDisplay();
 }
@@ -1243,6 +1258,11 @@ function playUserMusic() {
     // Update button text
     const playPauseBtn = document.getElementById('musicPlayPauseBtn');
     if (playPauseBtn) playPauseBtn.textContent = '⏸ Pause';
+    
+    // Apply current spatial settings to new track
+    if (typeof window.applySpatialFromHandle === 'function') {
+        window.applySpatialFromHandle();
+    }
 }
 
 // Pause user music
@@ -2216,7 +2236,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const APP_DEFAULT_Y = 57.5; // Front of listener
     
     // Headphone mode state and snap zone
-    let isHeadphoneMode = false;
+    let isHeadphoneMode = true;
     const HEADPHONE_SNAP_RADIUS = 6; // Snap zone radius around center (smaller, always visible)
     
     // Load saved custom default or use app default
@@ -2249,6 +2269,9 @@ window.addEventListener('DOMContentLoaded', async () => {
             
             // Reset lowpass filter to full frequency (no head shadow)
             spatialDryLowpass.frequency.setTargetAtTime(22050, audioCtx.currentTime, 0.02);
+            
+            // Reset bass shelf boost
+            spatialDryBassShelf.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
             
             // Reset EQ to base
             musicEQMid.gain.setTargetAtTime(baseMidEQ, audioCtx.currentTime, 0.02);
@@ -2334,8 +2357,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Start reducing mid presence when behind center line (normalizedY > 0.15)
         if (normalizedY > 0.15) {
             // Smooth transition from center line to directly behind
-            // At normalizedY=1.0 (directly behind), midReduction=0.45 (55% reduction of presence)
-            midReduction = Math.max(0.45, 1.0 - (normalizedY - 0.15) * (0.55 / 0.85));
+            // At normalizedY=1.0 (directly behind), midReduction=0.30 (70% reduction of presence)
+            midReduction = Math.max(0.30, 1.0 - (normalizedY - 0.15) * (0.70 / 0.85));
         }
         
         // Apply volume attenuation with smoothing to prevent clicks
@@ -2363,17 +2386,19 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Reduced from previous (0.15 to 0.75) to give more control at close distances
         const baselineRoomReverb = 0.10 + (roomSizeFactor * 0.4);
         
-        // Distance boost: gentler curve, more reverb at edges
-        // Use squared distance for more gradual increase near center, steeper at edge
-        const distanceReverbBoost = Math.pow(normalizedDistance, 1.5) * 0.5;
-        
-        // Front/back directional reverb adjustment is now handled by mid-side EQ (presence reduction)
-        // No need for additional reverb modulation based on front/back position
-        
-        // Combine all reverb factors: baseline + distance (directional handled by presence reduction)
-        const totalReverbBoost = distanceReverbBoost;
-        // Cap between 0.05 and 0.85 (5% to 85% reverb)
-        const spatialReverb = Math.min(0.85, Math.max(0.05, baselineRoomReverb + totalReverbBoost));
+        // Room reverb is constant - doesn't change with spatial position of the source
+        // Reverb represents ambient room reflections which are omni-directional and unaffected by source location
+        // Only apply spatial reverb when NOT in headphone mode (to preserve user's preference when switching songs)
+        let spatialReverb;
+        if (isHeadphoneMode) {
+            // In headphone mode: reverb is off
+            spatialReverb = 0;
+        } else {
+            // In spatial mode: use room-based reverb only if user has actively positioned the handle
+            // This preserves the initial reverb state when switching songs
+            const baselineRoomReverb = 0.10 + (roomSizeFactor * 0.4);
+            spatialReverb = Math.min(0.85, Math.max(0.05, baselineRoomReverb));
+        }
         updateMusicReverbMix(spatialReverb, true);
         
         // ===== HEAD SHADOW LOWPASS FILTER =====
@@ -2392,20 +2417,32 @@ window.addEventListener('DOMContentLoaded', async () => {
             // Well in front: no filtering
             lowpassFreq = 22050;
         } else if (normalizedY > 0.4) {
-            // Well behind: full muffling
-            lowpassFreq = 3500;
+            // Well behind: aggressive muffling
+            lowpassFreq = 2000;
         } else {
             // Gradual transition from -0.4 to +0.4 (80% of the space)
             // Map to 0-1 range: (-0.4 to +0.4) -> (0 to 1)
             const t = (normalizedY + 0.4) / 0.8;
             // Use smoothstep curve for natural easing
             const smoothedT = t * t * (3 - 2 * t);
-            // Interpolate frequency from 22050 Hz to 3500 Hz
-            lowpassFreq = 22050 - (smoothedT * (22050 - 3500));
+            // Interpolate frequency from 22050 Hz to 2000 Hz
+            lowpassFreq = 22050 - (smoothedT * (22050 - 2000));
         }
         
         // Apply lowpass to ONLY dry path (reverb stays bright for natural room sound)
         spatialDryLowpass.frequency.setTargetAtTime(lowpassFreq, audioCtx.currentTime, 0.05);
+        
+        // ===== SCOOPED SOUND WHEN BEHIND (Bass boost for U-shaped EQ) =====
+        // When behind listener: mids are reduced (by midReduction), highs are reduced (by lowpass)
+        // To complete the scoop, boost the bass for a more realistic diffuse sound
+        let bassBoostGain = 0; // No boost in front
+        if (normalizedY > 0.15) {
+            // Gradually increase bass boost as audio moves behind
+            // Max +6dB boost when directly behind for pronounced scooped effect
+            const behindProgress = (normalizedY - 0.15) / 0.85;
+            bassBoostGain = behindProgress * 6.0; // 0 to 6 dB
+        }
+        spatialDryBassShelf.gain.setTargetAtTime(bassBoostGain, audioCtx.currentTime, 0.05);
         
         // ===== SUBTLE MID EQ ADJUSTMENT =====
         // Very subtle - just distance attenuation of mids, no head shadow
@@ -2446,6 +2483,15 @@ window.addEventListener('DOMContentLoaded', async () => {
         const distancePercent = (normalizedDistance * 100).toFixed(0);
         spatialFilterValue.textContent = `Distance: ${distancePercent}%`;
     }
+    
+    window.applySpatialFromHandle = function applySpatialFromHandle() {
+        if (!spatialHandle) return;
+        const x = parseFloat(spatialHandle.getAttribute('cx'));
+        const y = parseFloat(spatialHandle.getAttribute('cy'));
+        const safeX = Number.isFinite(x) ? x : savedDefaultX;
+        const safeY = Number.isFinite(y) ? y : savedDefaultY;
+        updateSpatialAudio(safeX, safeY);
+    };
     
     // Constrain handle to circle boundary
     function constrainToCircle(x, y) {
