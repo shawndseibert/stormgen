@@ -128,7 +128,7 @@ details summary::marker {
 
 /* Music Playback Section (inside collapsible panel) */
 .music-player-wrapper {
-    background: rgba(0, 0, 0, 0.7);
+    background: #000000;
     border: 2px solid var(--theme-color);
     border-top: none;
     border-radius: 0 0 4px 4px;
@@ -150,7 +150,7 @@ details summary::marker {
     font-size: 0.9em !important;
     font-weight: 600 !important;
     color: var(--secondary-accent) !important;
-    background: rgba(0, 0, 0, 0.7) !important;
+    background: #000000 !important;
     padding: 8px 35px 8px 14px !important;
     border-bottom: 2px solid rgba(var(--theme-color-rgb), 0.5) !important;
     cursor: pointer;
@@ -184,7 +184,7 @@ details summary::marker {
 #current-track-display,
 #next-track-display {
     padding: 8px 14px;
-    background: rgba(0, 0, 0, 0.4);
+    background: #000000;
     border: 1px solid rgba(var(--secondary-accent-rgb), 0.3);
     border-radius: 4px;
     color: var(--secondary-accent);
@@ -295,12 +295,12 @@ details summary::marker {
     0%, 100% {
         border-color: rgba(var(--secondary-accent-rgb), 0.5);
         box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.3);
-        background: rgba(0, 0, 0, 0.4);
+        background: #000000;
     }
     50% {
         border-color: rgba(var(--secondary-accent-rgb), 0.9);
         box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6), inset 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.2);
-        background: rgba(0, 0, 0, 0.6);
+        background: #000000;
     }
 }
 
@@ -381,9 +381,9 @@ details summary::marker {
 }
 /* Modern dropdown panel styles - Pip-Boy Edition */
 .controls details {
-    background: rgba(0, 0, 0, 0.9);
+    background: #000000;
     border-radius: 4px;
-    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.3), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.3), inset 0 0 20px #000000;
     margin-bottom: 12px;
     border: 2px solid var(--theme-color);
     overflow: hidden;
@@ -392,9 +392,9 @@ details summary::marker {
 
 /* Standalone panels (outside .controls) - more discreet */
 details.standalone-panel {
-    background: rgba(0, 0, 0, 0.85);
+    background: #000000;
     border-radius: 4px;
-    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.2), inset 0 0 15px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.2), inset 0 0 15px #000000;
     margin-bottom: 12px;
     border: 1px solid rgba(var(--theme-color-rgb), 0.6);
     overflow: hidden;
@@ -402,14 +402,14 @@ details.standalone-panel {
 }
 
 details.standalone-panel[open] {
-    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.35), inset 0 0 15px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.35), inset 0 0 15px #000000;
 }
 
 details.standalone-panel summary {
     font-size: 0.9em;
     font-weight: 600;
     color: var(--secondary-accent);
-    background: rgba(0, 0, 0, 0.7);
+    background: #000000;
     padding: 8px 14px;
     border-bottom: 1px solid rgba(var(--theme-color-rgb), 0.4);
     cursor: pointer;
@@ -452,7 +452,7 @@ details.standalone-panel > *:not(summary) {
 
 /* Nested panel inside music playback section */
 details.nested-panel {
-    background: rgba(0, 0, 0, 0.5);
+    background: #000000;
     border: 1px solid rgba(var(--secondary-accent-rgb), 0.3);
     border-radius: 4px;
     margin-top: 12px;
@@ -463,7 +463,7 @@ details.nested-panel summary {
     font-size: 0.85em;
     font-weight: 600;
     color: var(--secondary-accent);
-    background: rgba(0, 0, 0, 0.6);
+    background: #000000;
     padding: 8px 12px;
     cursor: pointer;
     outline: none;
@@ -505,13 +505,13 @@ details.nested-panel > *:not(summary) {
 }
 
 .controls details[open] {
-    box-shadow: 0 0 calc(25px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.5), inset 0 0 20px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 calc(25px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.5), inset 0 0 20px #000000;
 }
 .controls > details > summary {
     font-size: 1em;
     font-weight: 700;
     color: var(--secondary-accent);
-    background: rgba(0, 0, 0, 0.8);
+    background: #000000;
     padding: 10px 40px 10px 16px;
     border-bottom: 1px solid var(--theme-color);
     cursor: pointer;
@@ -554,6 +554,7 @@ details.nested-panel > *:not(summary) {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding: 16px;
 }
 
 #environment-controls {
@@ -577,7 +578,7 @@ details.nested-panel > *:not(summary) {
 
 body {
     font-family: 'Share Tech Mono', monospace;
-    background: #0a0a0a;
+    background: #000000;
     color: var(--secondary-accent);
     margin: 0;
     height: 100vh;
@@ -642,14 +643,21 @@ body::before {
     height: 100%;
     background: repeating-linear-gradient(
         0deg,
-        rgba(0, 0, 0, 0.15),
-        rgba(0, 0, 0, 0.15) 1px,
-        transparent 1px,
-        transparent 2px
+        transparent,
+        transparent 3px,
+        rgba(0, 0, 0, 0.08) 3px,
+        rgba(0, 0, 0, 0.08) 3.5px,
+        transparent 3.5px,
+        transparent 4px
     );
     pointer-events: none;
     z-index: 9999;
     animation: scanline 8s linear infinite;
+}
+
+/* Hide scanline when disabled */
+body.no-scanline::before {
+    display: none;
 }
 
 @keyframes scanline {
@@ -665,7 +673,7 @@ body::after {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(var(--theme-color-rgb), 0.02);
+    background: rgba(var(--theme-color-rgb), 0);
     pointer-events: none;
     z-index: 9998;
     animation: flicker 0.15s infinite alternate;
@@ -680,10 +688,10 @@ body::after {
     width: 100%;
     height: 100%;
     margin: 0;
-    background: rgba(0, 0, 0, 0.95);
+    background: #000000;
     padding: 20px;
     border-radius: 0;
-    box-shadow: 0 0 calc(40px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4), inset 0 0 30px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 0 calc(40px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4), inset 0 0 30px #000000;
     border: none;
     position: relative;
     z-index: 1; /* Keep above background flash layer */
@@ -785,7 +793,7 @@ body::after {
 
 @keyframes titleBarLightningFlash {
     0% {
-        background: rgba(0, 0, 0, 0.6);
+        background: #000000;
         box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
         border-color: var(--theme-color);
     }
@@ -807,7 +815,7 @@ body::after {
         border-color: var(--secondary-accent);
     }
     100% {
-        background: rgba(0, 0, 0, 0.6);
+        background: #000000;
         box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
         border-color: var(--theme-color);
     }
@@ -1049,7 +1057,7 @@ body::after {
 
 @keyframes titleBarLightningFlashLong {
     0% {
-        background: rgba(0, 0, 0, 0.6);
+        background: #000000;
         box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
         border-color: var(--theme-color);
     }
@@ -1069,7 +1077,7 @@ body::after {
         border-color: var(--secondary-accent);
     }
     100% {
-        background: rgba(0, 0, 0, 0.6);
+        background: #000000;
         box-shadow: 0 0 0 rgba(var(--secondary-accent-rgb), 0);
         border-color: var(--theme-color);
     }
@@ -1449,7 +1457,7 @@ input[type=range] {
     outline: none;
     border-radius: 3px;
     margin-top: 8px;
-    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8), 0 0 10px rgba(var(--secondary-accent-rgb), 0.3);
+    box-shadow: inset 0 0 5px #000000, 0 0 10px rgba(var(--secondary-accent-rgb), 0.3);
 }
 
 input[type=range]::-webkit-slider-thumb {
@@ -1565,7 +1573,7 @@ button:hover {
 }
 
 #stormToggleBtn.storm-stop {
-    background: rgba(255, 50, 50, 0.2) !important;
+    background: #000000 !important;
     color: #ff3232 !important;
     border-color: #ff3232 !important;
     text-shadow: 0 0 5px #ff3232 !important;
@@ -1573,12 +1581,12 @@ button:hover {
 }
 
 #stormToggleBtn.storm-stop:hover {
-    background: rgba(255, 50, 50, 0.35) !important;
+    background: #000000 !important;
     box-shadow: 0 0 20px rgba(255, 50, 50, 0.6), inset 0 0 10px rgba(255, 50, 50, 0.2) !important;
 }
 
 button:disabled {
-    background: rgba(50, 50, 50, 0.3);
+    background: #000000;
     color: #555;
     border-color: #555;
     cursor: not-allowed;
@@ -1662,7 +1670,7 @@ button:disabled {
     padding: 10px 12px;
     font-size: 0.9em;
     font-weight: 600;
-    background: rgba(255, 50, 50, 0.15);
+    background: #000000;
     color: #ff6666;
     border: 2px solid rgba(255, 50, 50, 0.5);
     border-radius: 4px;
@@ -1674,7 +1682,7 @@ button:disabled {
 }
 
 .clear-playlist-btn:hover {
-    background: rgba(255, 50, 50, 0.3);
+    background: #000000;
     box-shadow: 0 0 15px rgba(255, 50, 50, 0.5);
     border-color: #ff6666;
 }
@@ -1702,7 +1710,7 @@ button:disabled {
 #playlist-container {
     max-height: 200px;
     overflow-y: auto;
-    background: rgba(0, 0, 0, 0.3);
+    background: #000000;
     border: 1px solid rgba(var(--theme-color-rgb), 0.3);
     border-radius: 4px;
     padding: 4px;
@@ -1713,7 +1721,7 @@ button:disabled {
 }
 
 #playlist-container::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.3);
+    background: #000000;
     border-radius: 4px;
 }
 
@@ -1732,7 +1740,7 @@ button:disabled {
     align-items: center;
     padding: 8px 10px;
     margin: 2px 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: #000000;
     border: 1px solid rgba(var(--secondary-accent-rgb), 0.2);
     border-radius: 3px;
     cursor: pointer;
@@ -1790,13 +1798,13 @@ button:disabled {
 }
 
 .track-btn.delete-btn {
-    background: rgba(255, 50, 50, 0.15);
+    background: #000000;
     color: #ff6666;
     border-color: rgba(255, 50, 50, 0.5);
 }
 
 .track-btn.delete-btn:hover {
-    background: rgba(255, 50, 50, 0.3);
+    background: #000000;
     box-shadow: 0 0 8px rgba(255, 50, 50, 0.4);
 }
 
@@ -1808,7 +1816,7 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 20px;
 }
 
 #radio-eq-presets label {
@@ -1857,9 +1865,10 @@ button:disabled {
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: rgba(0, 0, 0, 0.3);
+    background: #000000;
     border: 1px solid rgba(var(--theme-color-rgb), 0.3);
     border-radius: 4px;
+    margin-top: 20px;
     margin-bottom: 12px;
 }
 
@@ -1929,8 +1938,8 @@ button:disabled {
     background: linear-gradient(to right, 
         rgba(var(--secondary-accent-rgb), 0.5) 0%, 
         rgba(var(--secondary-accent-rgb), 0.5) var(--volume-percent, 100%), 
-        rgba(0, 0, 0, 0.4) var(--volume-percent, 100%), 
-        rgba(0, 0, 0, 0.4) 100%);
+        #000000 var(--volume-percent, 100%), 
+        #000000 100%);
     border-radius: 3px;
     outline: none;
     border: 1px solid rgba(var(--theme-color-rgb), 0.3);
@@ -1986,8 +1995,8 @@ button:disabled {
     background: linear-gradient(to right, 
         rgba(var(--secondary-accent-rgb), 0.5) 0%, 
         rgba(var(--secondary-accent-rgb), 0.5) var(--track-percent, 0%), 
-        rgba(0, 0, 0, 0.4) var(--track-percent, 0%), 
-        rgba(0, 0, 0, 0.4) 100%);
+        #000000 var(--track-percent, 0%), 
+        #000000 100%);
     border-radius: 3px;
     outline: none;
     border: 1px solid rgba(var(--theme-color-rgb), 0.3);
@@ -2088,7 +2097,7 @@ button:disabled {
     width: 100%;
     height: 40px;
     border: 2px solid var(--secondary-accent);
-    background: rgba(0, 0, 0, 0.5);
+    background: #000000;
     cursor: pointer;
     border-radius: 4px;
     margin-top: 6px;
@@ -2117,7 +2126,7 @@ button:disabled {
 #spatial-controller-section {
     margin: 20px 0;
     padding: 16px;
-    background: rgba(0, 0, 0, 0.3);
+    background: #000000;
     border: 1px solid rgba(var(--secondary-accent-rgb), 0.3);
     border-radius: 6px;
 }
@@ -2147,7 +2156,7 @@ button:disabled {
 }
 
 .spatial-circle-bg {
-    fill: rgba(0, 0, 0, 0.5);
+    fill: #000000;
     stroke: var(--theme-color);
     stroke-width: 2;
     filter: drop-shadow(0 0 calc(8px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.5));
@@ -2193,33 +2202,40 @@ button:disabled {
 
 /* Headphone mode - visual feedback when snapped to center */
 .spatial-handle.headphone-mode {
-    fill: #ff9500;
-    stroke: #ffcc00;
-    filter: drop-shadow(0 0 calc(16px * var(--glow-intensity)) rgba(255, 149, 0, 0.9));
+    fill: #ff3333;
+    stroke: #ff6666;
+    filter: drop-shadow(0 0 calc(16px * var(--glow-intensity)) rgba(255, 51, 51, 0.9));
     animation: headphone-pulse 2s ease-in-out infinite;
 }
 
 .spatial-handle-inner.headphone-mode {
-    fill: #ffcc00;
-    filter: drop-shadow(0 0 calc(8px * var(--glow-intensity)) #ffcc00);
+    fill: #ff6666;
+    filter: drop-shadow(0 0 calc(8px * var(--glow-intensity)) #ff6666);
 }
 
 @keyframes headphone-pulse {
     0%, 100% {
-        filter: drop-shadow(0 0 calc(16px * var(--glow-intensity)) rgba(255, 149, 0, 0.9));
+        filter: drop-shadow(0 0 calc(16px * var(--glow-intensity)) rgba(255, 51, 51, 0.9));
     }
     50% {
-        filter: drop-shadow(0 0 calc(24px * var(--glow-intensity)) rgba(255, 149, 0, 1));
+        filter: drop-shadow(0 0 calc(24px * var(--glow-intensity)) rgba(255, 51, 51, 1));
     }
 }
 
-/* Headphone snap zone - subtle center circle indicator */
+/* Headphone snap zone - hidden, icon shows the snap area */
 .headphone-snap-zone {
     fill: none;
     stroke: #ff9500;
     stroke-width: 2;
     stroke-dasharray: 4 4;
-    opacity: 0.5;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Headphone icon in center of snap zone */
+.headphone-icon {
+    color: var(--theme-color);
+    opacity: 0.6;
     pointer-events: none;
 }
 
@@ -2230,12 +2246,12 @@ button:disabled {
     flex-direction: row;
     gap: 3px;
     padding: 3px;
-    background: rgba(0, 0, 0, 0.95);
+    background: #000000;
     border: 1px solid var(--secondary-accent);
     border-radius: 4px;
     box-shadow: 0 0 calc(12px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6);
     z-index: 1000;
-    transform: translate(-50%, calc(-100% - 5px));
+    transform: translate(-50%, calc(-100% + 10px));
     pointer-events: none;
     justify-content: center;
     align-items: center;
@@ -2275,7 +2291,7 @@ button:disabled {
     justify-content: space-around;
     margin-top: 12px;
     padding: 8px;
-    background: rgba(0, 0, 0, 0.4);
+    background: #000000;
     border-radius: 4px;
     font-size: 0.9em;
     color: var(--theme-color);
@@ -2290,10 +2306,43 @@ button:disabled {
     font-weight: bold;
 }
 
+/* Spatial auto-rotate controls */
+.spatial-auto-controls {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0;
+}
+
+.spatial-auto-btn {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    font-weight: 600;
+    background: rgba(var(--secondary-accent-rgb), 0.15);
+    color: var(--secondary-accent);
+    border: 2px solid rgba(var(--secondary-accent-rgb), 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Share Tech Mono', monospace;
+    text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
+}
+
+.spatial-auto-btn:hover {
+    background: rgba(var(--secondary-accent-rgb), 0.25);
+    border-color: var(--secondary-accent);
+    box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.4);
+}
+
+.spatial-auto-btn.active {
+    background: rgba(var(--secondary-accent-rgb), 0.35);
+    border-color: var(--secondary-accent);
+    box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6);
+}
+
 /* Music Playlist Panel - Standalone section */
 #music-playlist-panel {
     margin-top: 12px;
-    background: rgba(10, 5, 5, 0.9);
+    background: #000000;
     border: 1px solid var(--theme-color);
     border-radius: 4px;
     padding: 0;
@@ -2311,7 +2360,7 @@ button:disabled {
 }
 
 #music-playlist-panel summary:hover {
-    background: rgba(15, 10, 10, 0.9);
+    background: #000000;
 }
 
 #music-playlist-panel #playlist-section,
@@ -2335,13 +2384,13 @@ button:disabled {
     font-weight: bold;
     cursor: pointer;
     border-top: 1px solid var(--theme-color);
-    background: rgba(10, 5, 5, 0.8);
+    background: #000000;
     margin: 0;
     font-family: 'Share Tech Mono', monospace;
 }
 
 #settings-panel summary:hover {
-    background: rgba(15, 10, 10, 0.9);
+    background: #000000;
 }
 
 #settings-panel[open] > summary {
@@ -2350,7 +2399,7 @@ button:disabled {
 
 #settings-panel #settings-controls {
     padding: 0;
-    background: rgba(5, 0, 0, 0.9);
+    background: #000000;
     border-radius: 0 0 4px 4px;
 }
 
@@ -2360,7 +2409,7 @@ button:disabled {
     border-left: none;
     border-right: none;
     border-bottom: 1px solid var(--theme-color);
-    background: rgba(10, 5, 5, 0.8);
+    background: #000000;
 }
 
 #settings-panel .nested-panel:last-child {

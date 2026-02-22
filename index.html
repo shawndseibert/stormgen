@@ -16,7 +16,7 @@
                 <canvas id="waveform"></canvas>
             </div>
             <h1>Storm Generator</h1>
-            <div id="weather-icon" class="weather-icon">☀️</div>
+            <div id="weather-icon" class="weather-icon">☀</div>
         </div>
         
 
@@ -73,8 +73,8 @@
                 <div id="playlist-section">
                     <div id="playlist-upload">
                         <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
-                        <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
-                        <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
+                        <button id="uploadMusicBtn" class="upload-btn">+ Upload MP3</button>
+                        <button id="clearPlaylistBtn" class="clear-playlist-btn">× Clear All</button>
                     </div>
                     <div id="playlist-container">
                         <div id="playlist-items"></div>
@@ -94,34 +94,8 @@
             <details id="settings-panel" class="player-settings">
                 <summary>Settings</summary>
                 <div id="settings-controls">
-                    <!-- Theme Sub-Panel -->
-                    <details class="nested-panel">
-                        <summary>Theme</summary>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                            <div>
-                                <label style="font-size: 0.85em; margin-bottom: 4px; display: block;">Primary<br><span style="font-size: 0.8em; opacity: 0.7; text-transform: none;">(borders)</span></label>
-                                <input type="color" id="theme-color-picker" value="#888888" style="width: 100%; height: 60px; cursor: pointer; border: 2px solid var(--secondary-accent); border-radius: 4px; background: rgba(0, 0, 0, 0.5);">
-                            </div>
-                            <div>
-                                <label style="font-size: 0.85em; margin-bottom: 4px; display: block;">Secondary<br><span style="font-size: 0.8em; opacity: 0.7; text-transform: none;">(UI & text)</span></label>
-                                <input type="color" id="secondary-color-picker" value="#aaaaaa" style="width: 100%; height: 60px; cursor: pointer; border: 2px solid var(--secondary-accent); border-radius: 4px; background: rgba(0, 0, 0, 0.5);">
-                            </div>
-                        </div>
-                        <div>
-                            <label style="font-size: 0.85em; margin-bottom: 6px; display: block;">Glow Intensity</label>
-                            <input type="range" id="glow-intensity" min="0" max="2" step="0.1" value="1" style="width: 100%;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75em; opacity: 0.6; margin-top: 4px;">
-                                <span>Off</span>
-                                <span>Normal</span>
-                                <span>Max</span>
-                            </div>
-                        </div>
-                    </details>
-                    
-                    <!-- Audio Effects & EQ Sub-Panel -->
-                    <details class="nested-panel">
-                        <summary>Audio Effects & EQ</summary>
-                        <div id="audio-effects-controls">
+                    <!-- Audio Effects & EQ - Always Visible -->
+                    <div id="audio-effects-controls">
                             <!-- Radio EQ Presets -->
                             <div id="radio-eq-presets">
                                 <label>Radio Presets</label>
@@ -141,10 +115,23 @@
                                         <!-- Background circle -->
                                         <circle cx="100" cy="100" r="85" class="spatial-circle-bg"/>
                                         <!-- Headphone mode snap zone indicator (center circle) - always visible -->
-                                        <circle cx="100" cy="100" r="15" class="headphone-snap-zone" id="headphone-snap-zone"/>
-                                        <!-- Center cross guides -->
-                                        <line x1="100" y1="20" x2="100" y2="180" class="spatial-guide"/>
-                                        <line x1="20" y1="100" x2="180" y2="100" class="spatial-guide"/>
+                                        <circle cx="100" cy="100" r="6" class="headphone-snap-zone" id="headphone-snap-zone"/>
+                                        <!-- Headphone icon in center -->
+                                        <g class="headphone-icon">
+                                            <!-- Headband arc -->
+                                            <path d="M 94 100 Q 94 94, 100 94 Q 106 94, 106 100" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                            <!-- Left ear cup -->
+                                            <rect x="92" y="100" width="3" height="5" rx="1" fill="currentColor" opacity="0.8"/>
+                                            <!-- Right ear cup -->
+                                            <rect x="105" y="100" width="3" height="5" rx="1" fill="currentColor" opacity="0.8"/>
+                                        </g>
+                                        <!-- Center cross guides - split to avoid headphone zone -->
+                                        <!-- Vertical line segments (top and bottom) -->
+                                        <line x1="100" y1="20" x2="100" y2="85" class="spatial-guide"/>
+                                        <line x1="100" y1="115" x2="100" y2="180" class="spatial-guide"/>
+                                        <!-- Horizontal line segments (left and right) -->
+                                        <line x1="20" y1="100" x2="85" y2="100" class="spatial-guide"/>
+                                        <line x1="115" y1="100" x2="180" y2="100" class="spatial-guide"/>
                                         <!-- Position labels - top-down head view -->
                                         <text x="100" y="12" class="spatial-label" text-anchor="middle">Front</text>
                                         <text x="100" y="195" class="spatial-label" text-anchor="middle">Back</text>
@@ -157,10 +144,19 @@
                                     <!-- Popup menu for spatial controls -->
                                     <div id="spatial-popup-menu" class="spatial-popup-menu">
                                         <button id="popup-reset" title="Reset to saved default">↻</button>
-                                        <button id="popup-save" title="Save as default">💾</button>
-                                        <button id="popup-app-default" title="Reset to app default">🏠</button>
+                                        <button id="popup-save" title="Save as default">S</button>
+                                        <button id="popup-app-default" title="Reset to app default">0</button>
                                     </div>
                                 </div>
+
+                                <div class="spatial-auto-controls">
+                                    <button id="spatial-auto-rotate" class="spatial-auto-btn" title="Auto-rotate sound around head">⭮ Auto</button>
+                                </div>
+
+                                <label for="autoRotateSpeed">Rotation Speed
+                                    <input type="range" id="autoRotateSpeed" min="0.1" max="2.0" step="0.1" value="0.5">
+                                    <span id="autoRotateSpeedLabel">0.5×</span>
+                                </label>
 
                                 <label for="musicRoomSize">Room Size
                                     <input type="range" id="musicRoomSize" min="0.001" max="0.10" step="0.001" value="0.02">
@@ -195,6 +191,35 @@
                                     <span id="eqTrebleLabel">0 dB</span>
                                 </label>
                             </div>
+                        </div>
+                    
+                    <!-- Theme Sub-Panel -->
+                    <details class="nested-panel">
+                        <summary>Theme</summary>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="font-size: 0.85em; margin-bottom: 4px; display: block;">Primary<br><span style="font-size: 0.8em; opacity: 0.7; text-transform: none;">(borders)</span></label>
+                                <input type="color" id="theme-color-picker" value="#888888" style="width: 100%; height: 60px; cursor: pointer; border: 2px solid var(--secondary-accent); border-radius: 4px; background: rgba(0, 0, 0, 0.5);">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85em; margin-bottom: 4px; display: block;">Secondary<br><span style="font-size: 0.8em; opacity: 0.7; text-transform: none;">(UI & text)</span></label>
+                                <input type="color" id="secondary-color-picker" value="#aaaaaa" style="width: 100%; height: 60px; cursor: pointer; border: 2px solid var(--secondary-accent); border-radius: 4px; background: rgba(0, 0, 0, 0.5);">
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85em; margin-bottom: 6px; display: block;">Glow Intensity</label>
+                            <input type="range" id="glow-intensity" min="0" max="2" step="0.1" value="1" style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75em; opacity: 0.6; margin-top: 4px;">
+                                <span>Off</span>
+                                <span>Normal</span>
+                                <span>Max</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <label>
+                                <input type="checkbox" id="scanline-toggle" checked>
+                                Scanline Effect
+                            </label>
                         </div>
                     </details>
                     
@@ -314,7 +339,7 @@
                 <div id="environment-controls">
                     <!-- Storm Presets -->
                     <div class="preset-buttons">
-                        <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
+                        <button class="preset-btn" id="presetIndoorCozy">⌂ Indoor Cozy</button>
                         <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
                     </div>
                     
@@ -323,7 +348,7 @@
                         <label>Custom Presets</label>
                         <div style="display: flex; gap: 8px; margin-top: 8px;">
                             <input type="text" id="customPresetName" placeholder="Preset name..." style="flex: 1; padding: 6px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--theme-color); color: var(--theme-color); border-radius: 4px; font-family: 'Share Tech Mono', monospace;">
-                            <button id="savePresetBtn" class="preset-btn" style="flex-shrink: 0;">💾 Save</button>
+                            <button id="savePresetBtn" class="preset-btn" style="flex-shrink: 0;">S Save</button>
                         </div>
                         <div id="customPresetsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
                     </div>
