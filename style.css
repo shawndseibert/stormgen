@@ -130,8 +130,10 @@ details summary::marker {
 .music-player-wrapper {
     background: rgba(0, 0, 0, 0.7);
     border: 2px solid var(--theme-color);
-    border-radius: 4px;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
     margin-bottom: 12px;
+    margin-top: 0;
     box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
     overflow: visible; /* Changed from hidden to allow sticky positioning */
 }
@@ -160,117 +162,7 @@ details summary::marker {
     text-shadow: 0 0 calc(4px * var(--glow-intensity)) var(--secondary-accent) !important;
 }
 
-.music-player-panel > details > summary::-webkit-details-marker {
-    display: none;
-}
 
-.music-player-panel > details > summary::marker {
-    display: none;
-}
-
-.music-player-panel > details > summary:after {
-    content: '\25BC';
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%) rotate(0deg);
-    transition: transform 0.2s;
-    color: var(--secondary-accent);
-    font-size: 0.7em;
-    text-shadow: 0 0 calc(4px * var(--glow-intensity)) var(--secondary-accent);
-}
-
-.music-player-panel > details[open] > summary:after {
-    transform: translateY(-50%) rotate(-180deg);
-}
-
-.summary-track-info {
-    display: inline-block;
-    margin-left: 12px;
-    margin-right: 30px;
-    color: var(--secondary-accent);
-    font-size: 0.85em;
-    opacity: 1;
-    max-width: calc(100% - 42px);
-}
-
-
-#summary-track-name {
-    overflow: hidden;
-    position: relative;
-    white-space: nowrap;
-    max-width: 400px;
-    display: inline-block;
-    vertical-align: middle;
-}
-
-/* Wrapper for scrolling content */
-#summary-track-name .summary-content {
-    display: inline-block;
-    white-space: nowrap;
-    width: max-content; /* Allow content to determine width */
-}
-
-/* Scrolling for long summary text */
-#summary-track-name.scrolling .summary-content {
-    animation: summaryScroll 10s ease-in-out infinite;
-}
-
-@keyframes summaryScroll {
-    0%, 15% {
-        transform: translateX(0);
-    }
-    45%, 55% {
-        transform: translateX(var(--summary-scroll-distance));
-    }
-    85%, 100% {
-        transform: translateX(0);
-    }
-}
-
-/* Styling for current and next track in summary */
-#summary-track-name .current-track-summary {
-    color: var(--secondary-accent);
-    font-weight: 600;
-    display: inline-block;
-}
-
-#summary-track-name .next-track-summary {
-    color: var(--secondary-accent);
-    opacity: 0.6;
-    font-weight: 400;
-    font-style: italic;
-    display: inline-block;
-    animation: nextTrackPulse 2s ease-in-out infinite;
-}
-
-#summary-track-name .arrow {
-    color: var(--secondary-accent);
-    opacity: 0.5;
-    margin: 0 8px;
-    display: inline-block;
-    font-size: 0.8em;
-}
-
-/* Pulse animation for upcoming track only */
-@keyframes nextTrackPulse {
-    0%, 100% {
-        opacity: 0.6;
-        text-shadow: 0 0 calc(3px * var(--glow-intensity)) var(--secondary-accent);
-    }
-    50% {
-        opacity: 0.9;
-        text-shadow: 0 0 calc(8px * var(--glow-intensity)) var(--secondary-accent), 0 0 12px var(--secondary-accent);
-    }
-}
-
-#music-playback-section {
-    background: transparent;
-    border: none;
-    padding: 16px 18px 18px 18px;
-    margin-bottom: 0;
-    box-shadow: none;
-}
 
 /* Always visible controls section */
 #music-controls-always-visible {
@@ -278,19 +170,13 @@ details summary::marker {
     border-top: 1px solid rgba(var(--theme-color-rgb), 0.2);
 }
 
-#music-playback-section #current-track-display {
-    margin-bottom: 0;
-}
-
 #track-display-container {
     margin-bottom: 12px;
-    margin-left: -18px;
-    margin-right: -18px;
-    padding-left: 18px;
-    padding-right: 18px;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 16px 18px;
     display: flex;
     gap: 12px;
-    width: calc(100% + 36px);
     box-sizing: border-box;
 }
 
@@ -342,9 +228,12 @@ details summary::marker {
 }
 
 /* Hide track label, only show track name */
-#current-track-display .track-label,
-#next-track-display .track-label {
-    display: none;
+#current-track-display .track-label {
+    font-size: 0.65em;
+    opacity: 0.7;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: block;
 }
 
 /* Container for scrolling track names */
@@ -389,12 +278,12 @@ details summary::marker {
     pointer-events: auto; /* Allow interaction when visible */
 }
 
-#current-track-display .track-label,
-#next-track-display .track-label {
-    font-size: 0.7em;
+#next-track-display.visible .track-label {
+    font-size: 0.65em;
     opacity: 0.7;
     font-weight: bold;
     letter-spacing: 1px;
+    display: block;
 }
 
 /* Crossfade animation - pulse next track */
@@ -805,13 +694,14 @@ body::after {
 .title-row {
     display: flex;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 0;
     justify-content: center;
     padding: 16px 70px 16px 10px;
     min-height: calc(1.5em + 32px + 4px);
     background: transparent;
     border: 2px solid var(--theme-color);
-    border-radius: 4px;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
     position: relative;
     box-sizing: border-box;
 }
@@ -832,6 +722,65 @@ body::after {
 /* Lightning flash effect on title bar */
 .title-row:has(.weather-icon.lightning) {
     animation: titleBarLightningFlash 0.8s ease-out;
+}
+
+/* Outline mode: Lightning effect on weather icon */
+.weather-icon.lightning {
+    animation: weatherIconLightningOutline 0.8s ease-out;
+}
+
+.weather-icon.lightning-long {
+    animation: weatherIconLightningOutlineLong 1.4s ease-out;
+}
+
+@keyframes weatherIconLightningOutline {
+    0% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+    }
+    10% {
+        text-shadow: 0 0 calc(30px * var(--glow-intensity)) var(--secondary-accent), 
+                     0 0 calc(60px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8), 
+                     inset 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.8);
+        filter: brightness(2) invert(1);
+    }
+    25% {
+        text-shadow: 0 0 calc(25px * var(--glow-intensity)) var(--secondary-accent), 
+                     0 0 calc(50px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6);
+        filter: brightness(1.8) invert(0.8);
+    }
+    50% {
+        text-shadow: 0 0 calc(15px * var(--glow-intensity)) var(--secondary-accent);
+        filter: brightness(1.3) invert(0.3);
+    }
+    100% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+        filter: brightness(1);
+    }
+}
+
+@keyframes weatherIconLightningOutlineLong {
+    0% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+    }
+    5% {
+        text-shadow: 0 0 calc(30px * var(--glow-intensity)) var(--secondary-accent), 
+                     0 0 calc(60px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.8), 
+                     inset 0 0 calc(20px * var(--glow-intensity)) rgba(255, 255, 255, 0.8);
+        filter: brightness(2) invert(1);
+    }
+    12% {
+        text-shadow: 0 0 calc(25px * var(--glow-intensity)) var(--secondary-accent), 
+                     0 0 calc(50px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6);
+        filter: brightness(1.8) invert(0.8);
+    }
+    25% {
+        text-shadow: 0 0 calc(15px * var(--glow-intensity)) var(--secondary-accent);
+        filter: brightness(1.3) invert(0.3);
+    }
+    100% {
+        text-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--secondary-accent);
+        filter: brightness(1);
+    }
 }
 
 @keyframes titleBarLightningFlash {
@@ -1370,8 +1319,8 @@ h1 {
     width: 100%;
     height: 100%;
     background: rgb(0, 0, 0); /* Completely opaque black background */
-    border: 2px solid var(--theme-color);
-    border-radius: 4px;
+    border: none;
+    border-radius: 4px 4px 0 0;
     box-shadow: inset 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.15), 0 0 calc(10px * var(--glow-intensity)) rgba(var(--theme-color-rgb), 0.4);
     position: absolute;
     top: 0;
@@ -1402,7 +1351,13 @@ h1 {
 }
 
 .waveform-label {
-    display: none; /* Hidden when used as title background */
+    display: none !important;
+    visibility: hidden !important;
+    position: absolute;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+    overflow: hidden;
 }
 
 /* Rain emoji animations removed - no longer needed */
@@ -1549,6 +1504,53 @@ button {
 button:hover {
     background: rgba(var(--secondary-accent-rgb), 0.25);
     box-shadow: 0 0 calc(20px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6), inset 0 0 calc(10px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.2);
+}
+
+/* Spatial Controller Control Buttons */
+#spatial-controls-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+#spatial-controls-row button {
+    padding: 6px 10px;
+    font-size: 0.85em;
+    min-width: fit-content;
+}
+
+#resetSpatialBtn,
+#saveSpatialDefaultBtn {
+    background: rgba(var(--secondary-accent-rgb), 0.1);
+    border-color: rgba(var(--secondary-accent-rgb), 0.6);
+    color: rgba(var(--secondary-accent), 0.8);
+}
+
+#resetToAppDefaultBtn {
+    background: rgba(var(--secondary-accent-rgb), 0.05);
+    border-color: rgba(var(--secondary-accent-rgb), 0.4);
+    color: rgba(var(--secondary-accent), 0.5);
+    font-size: 0.8em;
+}
+
+#spatial-controls-row button:hover {
+    background: rgba(var(--secondary-accent-rgb), 0.2);
+    color: var(--secondary-accent);
+    border-color: var(--secondary-accent);
+}
+
+/* Storm Toggle Button - Connected to panel below */
+#stormToggleBtn {
+    border-radius: 4px 4px 0 0 !important;
+}
+
+/* Storm Environment panel - Attached to button above */
+#stormToggleBtn + details {
+    margin-top: 0 !important;
+    border-radius: 0 0 4px 4px !important;
+    border-top: none !important;
 }
 
 /* Storm Toggle Button States */
@@ -2189,6 +2191,85 @@ button:disabled {
     filter: drop-shadow(0 0 calc(6px * var(--glow-intensity)) var(--theme-color));
 }
 
+/* Headphone mode - visual feedback when snapped to center */
+.spatial-handle.headphone-mode {
+    fill: #ff9500;
+    stroke: #ffcc00;
+    filter: drop-shadow(0 0 calc(16px * var(--glow-intensity)) rgba(255, 149, 0, 0.9));
+    animation: headphone-pulse 2s ease-in-out infinite;
+}
+
+.spatial-handle-inner.headphone-mode {
+    fill: #ffcc00;
+    filter: drop-shadow(0 0 calc(8px * var(--glow-intensity)) #ffcc00);
+}
+
+@keyframes headphone-pulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 calc(16px * var(--glow-intensity)) rgba(255, 149, 0, 0.9));
+    }
+    50% {
+        filter: drop-shadow(0 0 calc(24px * var(--glow-intensity)) rgba(255, 149, 0, 1));
+    }
+}
+
+/* Headphone snap zone - subtle center circle indicator */
+.headphone-snap-zone {
+    fill: none;
+    stroke: #ff9500;
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Spatial popup menu - small, attached to handle */
+.spatial-popup-menu {
+    position: fixed;
+    display: none;
+    flex-direction: row;
+    gap: 3px;
+    padding: 3px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid var(--secondary-accent);
+    border-radius: 4px;
+    box-shadow: 0 0 calc(12px * var(--glow-intensity)) rgba(var(--secondary-accent-rgb), 0.6);
+    z-index: 1000;
+    transform: translate(-50%, calc(-100% - 5px));
+    pointer-events: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.spatial-popup-menu.visible {
+    display: flex;
+    pointer-events: auto;
+}
+
+.spatial-popup-menu button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    font-size: 0.75em;
+    min-width: 22px;
+    height: 22px;
+    background: rgba(var(--secondary-accent-rgb), 0.05);
+    border: 1px solid rgba(var(--secondary-accent-rgb), 0.3);
+    border-radius: 2px;
+    transition: all 0.15s;
+    cursor: pointer;
+    opacity: 0.7;
+    line-height: 1;
+}
+
+.spatial-popup-menu button:hover {
+    background: rgba(var(--secondary-accent-rgb), 0.2);
+    border-color: var(--secondary-accent);
+    transform: scale(1.05);
+    opacity: 1;
+}
+
 .spatial-info {
     display: flex;
     justify-content: space-around;
@@ -2209,5 +2290,81 @@ button:disabled {
     font-weight: bold;
 }
 
+/* Music Playlist Panel - Standalone section */
+#music-playlist-panel {
+    margin-top: 12px;
+    background: rgba(10, 5, 5, 0.9);
+    border: 1px solid var(--theme-color);
+    border-radius: 4px;
+    padding: 0;
+}
 
+#music-playlist-panel summary {
+    padding: 12px 16px;
+    color: var(--secondary-accent);
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9em;
+    letter-spacing: 1px;
+}
+
+#music-playlist-panel summary:hover {
+    background: rgba(15, 10, 10, 0.9);
+}
+
+#music-playlist-panel #playlist-section,
+#music-playlist-panel #crossfade-section {
+    padding: 12px 16px;
+    border-top: 1px solid var(--theme-color);
+}
+
+/* Music Player Panel - Settings integrated into player */
+#settings-panel {
+    margin-top: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+}
+
+#settings-panel summary {
+    padding: 12px 16px;
+    color: var(--secondary-accent);
+    font-weight: bold;
+    cursor: pointer;
+    border-top: 1px solid var(--theme-color);
+    background: rgba(10, 5, 5, 0.8);
+    margin: 0;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+#settings-panel summary:hover {
+    background: rgba(15, 10, 10, 0.9);
+}
+
+#settings-panel[open] > summary {
+    border-bottom: 1px solid var(--theme-color);
+}
+
+#settings-panel #settings-controls {
+    padding: 0;
+    background: rgba(5, 0, 0, 0.9);
+    border-radius: 0 0 4px 4px;
+}
+
+#settings-panel .nested-panel {
+    margin-top: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--theme-color);
+    background: rgba(10, 5, 5, 0.8);
+}
+
+#settings-panel .nested-panel:last-child {
+    border-bottom: none;
+    border-radius: 0 0 4px 4px;
+}
 

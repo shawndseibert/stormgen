@@ -57,9 +57,14 @@ const thunderReverbBass = audioCtx.createBiquadFilter();
 const musicPannerNode = audioCtx.createStereoPanner();
 musicPannerNode.pan.value = 0;
 
+// Spatial head-shadow lowpass (only affects direct dry signal, NOT reverb)
+const spatialDryLowpass = audioCtx.createBiquadFilter();
+spatialDryLowpass.type = 'lowpass';
+spatialDryLowpass.frequency.value = 22050; // Start with no filtering
+
 // Store base values for spatial audio adjustments
 let baseMidEQ = 0;
-let baseMusicReverb = 0.3;
+let baseMusicReverb = 0; // Spatial controller now fully controls reverb
 let isSpatialUpdate = false; // Flag to prevent listener from updating baseMidEQ during spatial updates
 let isUserDraggingSlider = false; // Track if user is actively dragging the slider
 
@@ -139,9 +144,13 @@ musicEQMidBass.connect(musicEQMid);
 musicEQMid.connect(musicEQMidTreble);
 musicEQMidTreble.connect(musicEQTreble);
 musicEQTreble.connect(musicLowpassNode);
-// Add spatial audio chain: split BEFORE panner so reverb stays centered
-musicLowpassNode.connect(musicPannerNode).connect(musicDryGain).connect(analyser); // Dry signal is panned
-musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser); // Reverb is NOT panned (room ambience)
+// Spatial audio routing: DRY path gets spatial head-shadow lowpass, REVERB bypasses it to stay bright
+// Dry path: user lowpass -> panner -> spatial dry lowpass -> dry gain
+musicLowpassNode.connect(musicPannerNode);
+musicPannerNode.connect(spatialDryLowpass);
+spatialDryLowpass.connect(musicDryGain).connect(analyser);
+// Reverb path: user lowpass -> reverb (NO spatial lowpass, so room reflections stay bright)
+musicLowpassNode.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser);
 
 // Sound paths
 const RAIN_SOUND = 'sounds/rain/rain-sound-188158.mp3';
@@ -291,7 +300,8 @@ function showLightningIcon() {
     const titleRow = document.querySelector('.title-row');
     const lightningMode = document.getElementById('oscLightningMode')?.value || 'off';
     const useLongFlash = Math.random() < 0.2; // lower chance for long fades but still possible in any mode
-    const flashDuration = useLongFlash ? 1400 : 180;
+    // Animation durations must match CSS animation durations to allow full animation playback
+    const flashDuration = useLongFlash ? 1600 : 800; // Match CSS: short=0.8s, long=1.6s (for background) or 1.4s (for others)
     const body = document.body;
     
     // Show lightning bolt overlay on cloud
@@ -316,20 +326,6 @@ function showLightningIcon() {
                     titleRow.classList.add('lightning-bright');
                 }
             }
-        } else if (lightningMode === 'bright-back') {
-            if (titleRow) {
-                if (useLongFlash) {
-                    titleRow.classList.add('lightning-bright-back-long');
-                } else {
-                    titleRow.classList.add('lightning-bright-back');
-                }
-            }
-        } else if (lightningMode === 'outline') {
-            if (useLongFlash) {
-                weatherIcon.classList.add('lightning-long');
-            } else {
-                weatherIcon.classList.add('lightning');
-            }
         } else if (lightningMode === 'background') {
             if (body) {
                 const className = useLongFlash ? 'flash-background-long' : 'flash-background';
@@ -340,8 +336,6 @@ function showLightningIcon() {
 
     // Helper to clear classes between flashes
     const clearFlash = () => {
-        weatherIcon.classList.remove('lightning');
-        weatherIcon.classList.remove('lightning-long');
         if (body) {
             body.classList.remove('flash-background');
             body.classList.remove('flash-background-long');
@@ -351,8 +345,6 @@ function showLightningIcon() {
             titleRow.classList.remove('lightning-invert-long');
             titleRow.classList.remove('lightning-bright');
             titleRow.classList.remove('lightning-bright-long');
-            titleRow.classList.remove('lightning-bright-back');
-            titleRow.classList.remove('lightning-bright-back-long');
         }
     };
 
@@ -422,9 +414,7 @@ function applyPreset(presetName) {
     const thunderVolumeSlider = document.getElementById('thunderVolume');
     const lowpassFilterSlider = document.getElementById('lowpassFilter');
     const musicVolumeSlider = document.getElementById('musicVolume');
-    const musicLowpassSlider = document.getElementById('musicLowpass');
     const musicRoomSizeSlider = document.getElementById('musicRoomSize');
-    const musicReverbSlider = document.getElementById('musicReverb');
     const rainReverbSlider = document.getElementById('rainReverb');
     const thunderReverbSlider = document.getElementById('thunderReverb');
     
@@ -441,9 +431,9 @@ function applyPreset(presetName) {
         thunderVolumeSlider.value = preset.thunderVolume;
         lowpassFilterSlider.value = preset.lowpassFilter;
         musicVolumeSlider.value = preset.musicVolume;
-        musicLowpassSlider.value = preset.musicLowpass;
-        musicRoomSizeSlider.value = preset.musicRoomSize;
-        musicReverbSlider.value = preset.musicReverb;
+        if (preset.musicRoomSize !== undefined) {
+            musicRoomSizeSlider.value = preset.musicRoomSize;
+        }
         rainReverbSlider.value = preset.rainReverb;
         thunderReverbSlider.value = preset.thunderReverb;
     } else if (presetName === 'indoorcozy') {
@@ -452,9 +442,7 @@ function applyPreset(presetName) {
         thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 420; // Lowest - muffled sound like indoors
         // Keep current music volume - don't override with preset
-        musicLowpassSlider.value = 22050; // Max - no filtering on music
         musicRoomSizeSlider.value = 0.02; // Very small room
-        musicReverbSlider.value = 0.30; // Updated reverb mix
         rainReverbSlider.value = 0.50; // Rain reverb for indoor space
         thunderReverbSlider.value = 0.30; // Thunder reverb for indoor space
         
@@ -466,9 +454,7 @@ function applyPreset(presetName) {
         thunderVolumeSlider.value = 1;
         lowpassFilterSlider.value = 22050; // Max - no filtering
         // Keep current music volume - don't override with preset
-        musicLowpassSlider.value = 22050; // Max - no filtering
         musicRoomSizeSlider.value = 0.02; // Small room
-        musicReverbSlider.value = 0; // No reverb
         rainReverbSlider.value = 0; // No rain reverb
         thunderReverbSlider.value = 0; // No thunder reverb
         
@@ -480,9 +466,7 @@ function applyPreset(presetName) {
     thunderVolumeSlider.dispatchEvent(new Event('input'));
     lowpassFilterSlider.dispatchEvent(new Event('input'));
     musicVolumeSlider.dispatchEvent(new Event('input'));
-    musicLowpassSlider.dispatchEvent(new Event('input'));
     musicRoomSizeSlider.dispatchEvent(new Event('input'));
-    musicReverbSlider.dispatchEvent(new Event('input'));
     rainReverbSlider.dispatchEvent(new Event('input'));
     thunderReverbSlider.dispatchEvent(new Event('input'));
     
@@ -1061,8 +1045,7 @@ function playNextTrack() {
 function updateCurrentTrackDisplay() {
     const currentDisplay = document.getElementById('current-track-display');
     const nextDisplay = document.getElementById('next-track-display');
-    const summaryTrackName = document.getElementById('summary-track-name');
-    const summaryTrackInfo = document.querySelector('.summary-track-info');
+    
     if (!currentDisplay) return;
     
     const currentTrackName = currentDisplay.querySelector('.track-name');
@@ -1114,40 +1097,6 @@ function updateCurrentTrackDisplay() {
         
         setTextWithScroll(currentTrackName, cleanName);
         
-        if (summaryTrackName) {
-            // Show both tracks with distinction in collapsed summary
-            const content = `<span class="current-track-summary">${cleanName}</span> <span class="arrow">→</span> <span class="next-track-summary">${nextCleanName}</span>`;
-            summaryTrackName.innerHTML = `<span class="summary-content">${content}</span>`;
-            
-            // Check if summary needs scrolling - use requestAnimationFrame for accurate measurement
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    const container = summaryTrackName;
-                    const contentSpan = summaryTrackName.querySelector('.summary-content');
-                    if (contentSpan) {
-                        // Measure container width (constrained by max-width: 400px)
-                        const containerWidth = container.offsetWidth;
-                        
-                        // Get the full natural width of the content using getBoundingClientRect for sub-pixel accuracy
-                        const contentRect = contentSpan.getBoundingClientRect();
-                        const contentWidth = Math.ceil(contentRect.width);
-                        
-                        if (contentWidth > containerWidth + 5) {
-                            // Add extra 10px buffer to ensure all text is visible
-                            const overflowAmount = contentWidth - containerWidth + 10;
-                            container.style.setProperty('--summary-scroll-distance', `-${overflowAmount}px`);
-                            container.classList.add('scrolling');
-                        } else {
-                            container.classList.remove('scrolling');
-                            container.style.removeProperty('--summary-scroll-distance');
-                        }
-                    }
-                });
-            });
-        }
-        if (summaryTrackInfo) {
-            summaryTrackInfo.classList.add('crossfading');
-        }
         if (nextDisplay && nextTrackName) {
             nextDisplay.classList.add('visible');
             nextDisplay.classList.add('crossfade-active');
@@ -1162,13 +1111,6 @@ function updateCurrentTrackDisplay() {
         // Show only current track
         const cleanName = getCleanTrackName(userPlaylist[currentTrackIndex].name);
         
-        if (summaryTrackName) {
-            summaryTrackName.textContent = cleanName;
-            summaryTrackName.classList.remove('scrolling');
-        }
-        if (summaryTrackInfo) {
-            summaryTrackInfo.classList.remove('crossfading');
-        }
         if (nextDisplay) {
             nextDisplay.classList.remove('visible');
             nextDisplay.classList.remove('crossfade-active');
@@ -1183,12 +1125,6 @@ function updateCurrentTrackDisplay() {
     } else if (defaultMusicAudio && !defaultMusicAudio.paused) {
         setTextWithScroll(currentTrackName, 'Default Music');
         
-        if (summaryTrackName) {
-            summaryTrackName.textContent = 'Default Music';
-        }
-        if (summaryTrackInfo) {
-            summaryTrackInfo.classList.remove('crossfading');
-        }
         if (nextDisplay) {
             nextDisplay.classList.remove('visible');
             nextDisplay.classList.remove('crossfade-active');
@@ -1197,12 +1133,6 @@ function updateCurrentTrackDisplay() {
         if (currentTrackName) {
             currentTrackName.classList.remove('scrolling');
             currentTrackName.innerHTML = '<span>No track loaded</span>';
-        }
-        if (summaryTrackName) {
-            summaryTrackName.textContent = 'No track loaded';
-        }
-        if (summaryTrackInfo) {
-            summaryTrackInfo.classList.remove('crossfading');
         }
         if (nextDisplay) {
             nextDisplay.classList.remove('visible');
@@ -1722,9 +1652,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const thunderVolumeSlider = document.getElementById('thunderVolume');
     const lowpassFilterSlider = document.getElementById('lowpassFilter');
     const musicVolumeSlider = document.getElementById('musicVolume');
-    const musicLowpassSlider = document.getElementById('musicLowpass');
     const musicRoomSizeSlider = document.getElementById('musicRoomSize');
-    const musicReverbSlider = document.getElementById('musicReverb');
     const rainReverbSlider = document.getElementById('rainReverb');
     const thunderReverbSlider = document.getElementById('thunderReverb');
     
@@ -1737,9 +1665,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const savedMusicVolume = localStorage.getItem('stormgen-music-volume');
     musicVolumeSlider.value = savedMusicVolume !== null ? savedMusicVolume : 100;
     
-    musicLowpassSlider.value = 22050;
     musicRoomSizeSlider.value = 0.02;
-    musicReverbSlider.value = 0;
     rainReverbSlider.value = 0;
     thunderReverbSlider.value = 0;
     
@@ -1828,9 +1754,7 @@ window.addEventListener('DOMContentLoaded', async () => {
                 thunderVolume: parseFloat(document.getElementById('thunderVolume').value),
                 lowpassFilter: parseFloat(document.getElementById('lowpassFilter').value),
                 musicVolume: parseFloat(document.getElementById('musicVolume').value),
-                musicLowpass: parseFloat(document.getElementById('musicLowpass').value),
                 musicRoomSize: parseFloat(document.getElementById('musicRoomSize').value),
-                musicReverb: parseFloat(document.getElementById('musicReverb').value),
                 rainReverb: parseFloat(document.getElementById('rainReverb').value),
                 thunderReverb: parseFloat(document.getElementById('thunderReverb').value)
             };
@@ -2185,14 +2109,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
-    const musicLowpassLabel = document.getElementById('musicLowpassLabel');
-    
-    musicLowpassSlider.addEventListener('input', () => {
-        const cutoff = parseFloat(musicLowpassSlider.value);
-        musicLowpassLabel.textContent = cutoff + ' Hz';
-        musicLowpassNode.frequency.value = cutoff;
-    });
-    
     const musicReverbLabel = document.getElementById('musicReverbLabel');
 
     function setReverbBassBoost(mix, filterNode, maxDb) {
@@ -2202,29 +2118,21 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     function updateMusicReverbMix(mix, fromSpatial = false) {
         const clamped = Math.min(Math.max(mix, 0), 1);
-        musicWetGain.gain.value = clamped;
-        musicDryGain.gain.value = 1 - clamped;
-        musicReverbLabel.textContent = clamped.toFixed(2);
+        
+        // Smooth reverb mix transitions to prevent abrupt changes
+        musicWetGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.02);
+        musicDryGain.gain.setTargetAtTime(1 - clamped, audioCtx.currentTime, 0.02);
+        
+        if (musicReverbLabel) {
+            musicReverbLabel.textContent = clamped.toFixed(2);
+        }
         setReverbBassBoost(clamped, musicReverbBass, 7);
-
-        // Only move the slider when user adjusts it (not when spatial controller drives it)
-        if (!fromSpatial) {
-            musicReverbSlider.value = clamped;
+        
+        // Update baseMusicReverb when set from spatial controller
+        if (fromSpatial) {
             baseMusicReverb = clamped;
         }
     }
-    
-    musicReverbSlider.addEventListener('input', () => {
-        const mix = parseFloat(musicReverbSlider.value);
-        baseMusicReverb = mix; // Update base value
-        
-        // Re-apply spatial audio to add the spatial reverb boost on top of new base
-        if (spatialHandle) {
-            const x = parseFloat(spatialHandle.getAttribute('cx'));
-            const y = parseFloat(spatialHandle.getAttribute('cy'));
-            updateSpatialAudio(x, y);
-        }
-    });
     
     const rainReverbLabel = document.getElementById('rainReverbLabel');
     
@@ -2270,69 +2178,200 @@ window.addEventListener('DOMContentLoaded', async () => {
     const spatialSVG = document.getElementById('spatial-controller-svg');
     const spatialPanValue = document.getElementById('spatialPanValue');
     const spatialFilterValue = document.getElementById('spatialFilterValue');
+    const popupMenu = document.getElementById('spatial-popup-menu');
+    const snapZone = document.getElementById('headphone-snap-zone');
     
     let isDragging = false;
+    let wasRecentlyDragging = false;
+    let menuVisible = false;
     const centerX = 100;
     const centerY = 100;
     const radius = 85;
     
-    // Update spatial audio based on handle position
+    // ===== SPATIAL CONTROLLER DEFAULT POSITIONS =====
+    const APP_DEFAULT_X = 100;
+    const APP_DEFAULT_Y = 57.5; // Front of listener
+    
+    // Headphone mode state and snap zone
+    let isHeadphoneMode = false;
+    const HEADPHONE_SNAP_RADIUS = 15; // Snap zone radius around center (smaller, always visible)
+    
+    // Load saved custom default or use app default
+    let savedDefaultX = parseFloat(localStorage.getItem('stormgen-spatial-default-x')) || APP_DEFAULT_X;
+    let savedDefaultY = parseFloat(localStorage.getItem('stormgen-spatial-default-y')) || APP_DEFAULT_Y;
+    
+    // Load headphone mode state
+    isHeadphoneMode = localStorage.getItem('stormgen-headphone-mode') === 'true';
+    
+    // Update spatial audio based on handle position - TOP-DOWN HEAD VIEW
+    // SVG circle = horizontal plane around listener's head
+    // Center = inside listener's head, Front (top) = listener's face, Back (bottom) = behind head
     function updateSpatialAudio(x, y) {
-        // Calculate pan from X position (-1 to 1)
-        const normalizedX = (x - centerX) / radius;
-        const pan = Math.max(-1, Math.min(1, normalizedX));
-        musicPannerNode.pan.value = pan;
+        // ===== HEADPHONE MODE (Center Snap Zone) =====
+        // If in headphone mode, bypass all spatial effects - pure stereo listening
+        if (isHeadphoneMode) {
+            // Reset to neutral: center pan, no reverb, full volume
+            musicPannerNode.pan.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+            
+            const baseVolume = parseFloat(document.getElementById('musicVolume').value) / 100;
+            if (userMusicGain) {
+                userMusicGain.gain.setTargetAtTime(baseVolume, audioCtx.currentTime, 0.02);
+            }
+            if (defaultMusicAudio) {
+                defaultMusicAudio.volume = baseVolume;
+            }
+            
+            // Bypass reverb completely - set to 0 (no spatial reverb in headphone mode)
+            updateMusicReverbMix(0, false);
+            
+            // Reset EQ to base
+            musicEQMid.gain.setTargetAtTime(baseMidEQ, audioCtx.currentTime, 0.02);
+            if (eqMidLabel) {
+                eqMidLabel.textContent = baseMidEQ.toFixed(1) + ' dB';
+            }
+            
+            // Update UI
+            spatialPanValue.textContent = '🎧 Headphone Mode';
+            spatialFilterValue.textContent = 'Centered';
+            return; // Skip all spatial calculations
+        }
         
-        // Calculate mid EQ offset from Y position
-        // Mapping (with occlusionAmount as the magnitude scaler):
-        //   top    (y = -1): baseMidEQ + 0 dB
-        //   center (y =  0): baseMidEQ + 0 dB
-        //   bottom (y = +1): baseMidEQ - occlusion
-        const normalizedY = (y - centerY) / radius; // -1 at top, +1 at bottom
-        const maxOcclusionDb = 12; // maximum boost/cut in dB
-        const occDb = maxOcclusionDb;
-
-        // Only apply reduction for y >= 0 (center to bottom)
-        const clampedY = Math.max(0, normalizedY); // 0 to 1
-        const offset = -occDb * clampedY; // 0 at center/top, -occDb at bottom
-
-        const adjustedMidEQ = baseMidEQ + offset;
-
-        // Reverb mix driven by occlusion (Y-axis) and angular deviation from top
+        // Calculate distance from center (listener's head position)
         const dx = x - centerX;
         const dy = y - centerY;
-        const radial = Math.min(1, Math.sqrt(dx * dx + dy * dy) / radius);
-        const angle = Math.atan2(dy, dx); // -PI/2 at top
-        const topAngle = -Math.PI / 2;
-        const diffWrapped = ((angle - topAngle + Math.PI) % (2 * Math.PI)) - Math.PI; // minimal angle diff in [-PI, PI]
-        const angDev = Math.min(1, Math.abs(diffWrapped) / (Math.PI / 2)); // 0 at top, 1 by left/right (±90°)
-        // Faster ramp near top center: sqrt easing
-        const angFast = Math.sqrt(angDev);
-        // Gate by radial so the effect is strongest near the edge
-        let radialGate = (radial - 0.7) / 0.3; // maps 0.7→0 to 1.0→1.0
-        radialGate = Math.max(0, Math.min(1, radialGate));
-        const radialAngularReverb = radialGate * angFast * 0.35;
-        const occlusionReverb = clampedY * 0.35;
-        const spatialReverb = Math.min(1, baseMusicReverb + radialAngularReverb + occlusionReverb);
+        const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+        const normalizedDistance = Math.min(1, distanceFromCenter / radius); // 0 at center, 1 at edge
+        
+        // ===== DETERMINE FRONT vs BACK (for panning inversion) =====
+        // Y position: top (0) = front face, bottom (200) = back of head
+        // normalizedY: -1 at front, +1 at back
+        const normalizedY = (y - centerY) / radius;
+        // X position: left (0) = left side, right (200) = right side
+        // normalizedX: -1 at left, +1 at right
+        const normalizedX = (x - centerX) / radius;
+        // Determine which half: front (-1 to 0) or back (0 to +1)
+        const isBack = normalizedY > 0; // If positive Y, sound is coming from back
+        const backAmount = Math.max(0, normalizedY); // 0 at center/front, 1 at back
+        const frontAmount = Math.max(0, -normalizedY); // 1 at front, 0 at center/back
+        
+        // ===== STEREO SPEAKER PANNING (Speaker always points at listener) =====
+        // The dot is a stereo speaker with left and right drivers
+        // It always points toward the listener (at center)
+        // As it rotates around the listener, which channel faces the listener changes
+        
+        // Calculate angle from listener (center) to speaker (dot)
+        const angle = Math.atan2(dy, dx); // -PI to PI
+        // 0 = right, PI/2 = down(back), PI/-PI = left, -PI/2 = up(front)
+        
+        // Panning based on speaker's horizontal position (left-right axis from listener's perspective)
+        // Use cosine: right (0°) = +1, left (180°) = -1, top/bottom (±90°) = 0
+        let pan = Math.cos(angle);
+        
+        // Clamp to valid range
+        pan = Math.max(-1, Math.min(1, pan));
+        
+        // Smooth panning transitions to prevent sharp flips when crossing center
+        // Use setTargetAtTime for exponential smoothing - feels natural for continuous movement
+        musicPannerNode.pan.setTargetAtTime(pan, audioCtx.currentTime, 0.02);
+        
+        // ===== ROOM ACOUSTIC CONTEXT =====
+        const roomSize = parseFloat(document.getElementById('musicRoomSize').value); // 0.001 to 0.1
+        const roomSizeFactor = (0.1 - Math.min(roomSize, 0.1)) / 0.1; // 0=large room, 1=small room
+        
+        // ===== REALISTIC DISTANCE ATTENUATION =====
+        // Center = full volume, edges = quieter but still clearly audible
+        // In rooms, reflections mean you always hear the source
+        const roomInfluence = roomSizeFactor * 0.4; // Small rooms reduce distance penalty
+        const effectiveAttenuation = normalizedDistance * (0.7 - roomInfluence);
+        
+        const baseMinVolume = 0.5; // Always hear at least 50% (increased from 30%)
+        const roomBoostMin = roomSizeFactor * 0.2; // Small rooms boost minimum to 70% (increased from 45%)
+        
+        // Front of head has less distance attenuation than back due to head blocking
+        // frontAmount: 1 = directly in front, 0 = directly behind
+        const frontBackAttenuationFactor = 0.7 + (frontAmount * 0.3); // 0.7 (back) to 1.0 (front)
+        const minVolumeScale = (baseMinVolume + roomBoostMin) * frontBackAttenuationFactor;
+        
+        const volumeScale = 1 - (effectiveAttenuation * (1 - minVolumeScale));
+        
+        // Apply volume attenuation with smoothing to prevent clicks
+        const baseVolume = parseFloat(document.getElementById('musicVolume').value) / 100;
+        const targetVolume = baseVolume * volumeScale;
+        
+        if (userMusicGain) {
+            userMusicGain.gain.setTargetAtTime(targetVolume, audioCtx.currentTime, 0.02);
+        }
+        if (defaultMusicAudio) {
+            // HTMLAudioElement doesn't have automation, but volume changes are naturally smoothed by browser
+            defaultMusicAudio.volume = targetVolume;
+        }
+        
+        // ===== REVERB/DISTANCE PERCEPTION =====
+        // You're always in a room with ambient reflections - reverb never drops to zero
+        // In a SMALL room: reflections bounce everywhere, high reverb baseline
+        // In a LARGE room: fewer reflections, lower reverb baseline
+        // Close sources: more direct sound, but still hear room reflections
+        // Distant sources: more reverb-dominated, less direct sound
+        
+        // Base room ambience - highly dependent on room size
+        // Large room (factor=0) = 0.10 baseline reverb (sparse reflections)
+        // Small room (factor=1) = 0.50 baseline reverb (dense reflections)
+        // Reduced from previous (0.15 to 0.75) to give more control at close distances
+        const baselineRoomReverb = 0.10 + (roomSizeFactor * 0.4);
+        
+        // Distance boost: gentler curve, more reverb at edges
+        // Use squared distance for more gradual increase near center, steeper at edge
+        const distanceReverbBoost = Math.pow(normalizedDistance, 1.5) * 0.5;
+        
+        // Back sources: more reverb (reflections dominate when behind you)
+        // Front sources: direct sound clearer, less reverb accent
+        const frontBackReverbBoost = backAmount * 0.2; // Back adds up to 20% more reverb
+        
+        // Combine all reverb factors: baseline + distance + directional
+        const totalReverbBoost = distanceReverbBoost + frontBackReverbBoost;
+        // Cap at 0.85 (85% reverb) so there's always 15% dry signal mixed in
+        // This maintains the balance - never pure reverb, always some direct sound
+        const spatialReverb = Math.min(0.85, baselineRoomReverb + totalReverbBoost);
         updateMusicReverbMix(spatialReverb, true);
         
-        // Update audio node
-        musicEQMid.gain.value = adjustedMidEQ;
+        // ===== SUBTLE MID EQ ADJUSTMENT =====
+        // Very subtle - just distance attenuation of mids, no head shadow
+        const roomMidPreservation = roomSizeFactor * 1.5;
+        const midEQReduction = normalizedDistance * (2 - roomMidPreservation); // Up to 1 dB in small rooms, 2 dB in large
+        const adjustedMidEQ = baseMidEQ - midEQReduction;
         
-        // Do not move the Mid EQ slider visually; only show value in spatial info
+        // Smooth EQ transitions to prevent abrupt changes
+        musicEQMid.gain.setTargetAtTime(adjustedMidEQ, audioCtx.currentTime, 0.02);
+        
         if (eqMidLabel) {
             eqMidLabel.textContent = adjustedMidEQ.toFixed(1) + ' dB';
         }
         
-        // Update UI labels
-        if (Math.abs(pan) < 0.1) {
-            spatialPanValue.textContent = 'Center';
-        } else if (pan < 0) {
-            spatialPanValue.textContent = `Left ${Math.abs(pan * 100).toFixed(0)}%`;
+        // ===== UPDATE UI INDICATORS =====
+        // Pan indicator with directional awareness
+        let panDesc = '';
+        if (Math.abs(normalizedX) < 0.15) {
+            panDesc = 'Center';
+        } else if (normalizedX < 0) {
+            panDesc = `Left ${Math.abs(normalizedX * 100).toFixed(0)}%`;
         } else {
-            spatialPanValue.textContent = `Right ${(pan * 100).toFixed(0)}%`;
+            panDesc = `Right ${(normalizedX * 100).toFixed(0)}%`;
         }
-        spatialFilterValue.textContent = `${adjustedMidEQ.toFixed(1)} dB`;
+        
+        // Add front/back directional hint
+        if (Math.abs(normalizedY) < 0.2) {
+            panDesc += ' (Side)';
+        } else if (normalizedY < -0.2) {
+            panDesc += ' (Front)';
+        } else if (normalizedY > 0.2) {
+            panDesc += ' (Back)';
+        }
+        
+        spatialPanValue.textContent = panDesc;
+        
+        // Distance/reverb indicator
+        const distancePercent = (normalizedDistance * 100).toFixed(0);
+        spatialFilterValue.textContent = `Distance: ${distancePercent}%`;
     }
     
     // Constrain handle to circle boundary
@@ -2371,6 +2410,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     function startDragging(evt) {
         isDragging = true;
         evt.preventDefault();
+        
+        // Disable headphone mode when dragging starts so user can hear spatial effects
+        if (isHeadphoneMode) {
+            isHeadphoneMode = false;
+            spatialHandle.classList.remove('headphone-mode');
+            spatialHandleInner.classList.remove('headphone-mode');
+        }
+        
         const pos = getPosition(evt);
         spatialHandle.setAttribute('cx', pos.x);
         spatialHandle.setAttribute('cy', pos.y);
@@ -2389,14 +2436,189 @@ window.addEventListener('DOMContentLoaded', async () => {
         spatialHandleInner.setAttribute('cy', pos.y);
         updateSpatialAudio(pos.x, pos.y);
         
-        // Save spatial controller position
-        localStorage.setItem('stormgen-spatial-x', pos.x);
-        localStorage.setItem('stormgen-spatial-y', pos.y);
+        // Update popup menu position to follow handle
+        updatePopupPosition(pos.x, pos.y);
     }
     
     function stopDragging() {
+        if (!isDragging) return;
         isDragging = false;
+        wasRecentlyDragging = true;
+        
+        // Reset flag after a short delay
+        setTimeout(() => {
+            wasRecentlyDragging = false;
+        }, 200);
+        
+        // Check if handle was dropped in headphone snap zone (center circle)
+        const handleX = parseFloat(spatialHandle.getAttribute('cx'));
+        const handleY = parseFloat(spatialHandle.getAttribute('cy'));
+        const dx = handleX - centerX;
+        const dy = handleY - centerY;
+        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distFromCenter <= HEADPHONE_SNAP_RADIUS) {
+            // Snap to center and enable headphone mode
+            isHeadphoneMode = true;
+            spatialHandle.setAttribute('cx', centerX);
+            spatialHandle.setAttribute('cy', centerY);
+            spatialHandleInner.setAttribute('cx', centerX);
+            spatialHandleInner.setAttribute('cy', centerY);
+            localStorage.setItem('stormgen-headphone-mode', 'true');
+            localStorage.setItem('stormgen-spatial-x', centerX);
+            localStorage.setItem('stormgen-spatial-y', centerY);
+            
+            // Add visual feedback
+            spatialHandle.classList.add('headphone-mode');
+            spatialHandleInner.classList.add('headphone-mode');
+            
+            updateSpatialAudio(centerX, centerY);
+        } else {
+            // Outside snap zone - save position and disable headphone mode if it was active
+            localStorage.setItem('stormgen-spatial-x', handleX);
+            localStorage.setItem('stormgen-spatial-y', handleY);
+            
+            if (isHeadphoneMode) {
+                isHeadphoneMode = false;
+                localStorage.setItem('stormgen-headphone-mode', 'false');
+                spatialHandle.classList.remove('headphone-mode');
+                spatialHandleInner.classList.remove('headphone-mode');
+                updateSpatialAudio(handleX, handleY);
+            }
+        }
     }
+    
+    // ===== POPUP MENU FUNCTIONALITY =====
+    
+    // Update popup menu position relative to handle
+    function updatePopupPosition(handleX, handleY) {
+        const rect = spatialSVG.getBoundingClientRect();
+        const x = ((handleX / 200) * rect.width) + rect.left;
+        const y = ((handleY / 200) * rect.height) + rect.top;
+        
+        popupMenu.style.left = x + 'px';
+        popupMenu.style.top = (y - 30) + 'px'; // Position above handle
+    }
+    
+    // Show/hide popup based on mouse proximity to handle
+    spatialSVG.addEventListener('mousemove', (evt) => {
+        if (isDragging) return;
+        
+        const rect = spatialSVG.getBoundingClientRect();
+        const mouseX = ((evt.clientX - rect.left) / rect.width) * 200;
+        const mouseY = ((evt.clientY - rect.top) / rect.height) * 200;
+        
+        const handleX = parseFloat(spatialHandle.getAttribute('cx'));
+        const handleY = parseFloat(spatialHandle.getAttribute('cy'));
+        
+        const dx = mouseX - handleX;
+        const dy = mouseY - handleY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance <= 20) {
+            if (!menuVisible) {
+                menuVisible = true;
+                popupMenu.classList.add('visible');
+                updatePopupPosition(handleX, handleY);
+            }
+        } else if (distance > 30) {
+            if (menuVisible) {
+                menuVisible = false;
+                popupMenu.classList.remove('visible');
+            }
+        }
+    });
+    
+    // Hide menu when mouse leaves SVG area
+    spatialSVG.addEventListener('mouseleave', () => {
+        menuVisible = false;
+        popupMenu.classList.remove('visible');
+    });
+    
+    // Popup button handlers
+    document.getElementById('popup-reset')?.addEventListener('click', () => {
+        spatialHandle.setAttribute('cx', savedDefaultX);
+        spatialHandle.setAttribute('cy', savedDefaultY);
+        spatialHandleInner.setAttribute('cx', savedDefaultX);
+        spatialHandleInner.setAttribute('cy', savedDefaultY);
+        
+        // Check if reset position is within headphone snap zone
+        const dx = savedDefaultX - centerX;
+        const dy = savedDefaultY - centerY;
+        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distFromCenter <= HEADPHONE_SNAP_RADIUS) {
+            // Enable headphone mode if within snap radius
+            if (!isHeadphoneMode) {
+                isHeadphoneMode = true;
+                spatialHandle.classList.add('headphone-mode');
+                spatialHandleInner.classList.add('headphone-mode');
+                localStorage.setItem('stormgen-headphone-mode', 'true');
+            }
+        } else {
+            // Disable headphone mode if outside snap radius
+            if (isHeadphoneMode) {
+                isHeadphoneMode = false;
+                spatialHandle.classList.remove('headphone-mode');
+                spatialHandleInner.classList.remove('headphone-mode');
+                localStorage.setItem('stormgen-headphone-mode', 'false');
+            }
+        }
+        
+        updateSpatialAudio(savedDefaultX, savedDefaultY);
+        updatePopupPosition(savedDefaultX, savedDefaultY);
+        localStorage.setItem('stormgen-spatial-x', savedDefaultX);
+        localStorage.setItem('stormgen-spatial-y', savedDefaultY);
+    });
+    
+    document.getElementById('popup-save')?.addEventListener('click', () => {
+        const x = parseFloat(spatialHandle.getAttribute('cx'));
+        const y = parseFloat(spatialHandle.getAttribute('cy'));
+        savedDefaultX = x;
+        savedDefaultY = y;
+        localStorage.setItem('stormgen-spatial-default-x', x);
+        localStorage.setItem('stormgen-spatial-default-y', y);
+    });
+    
+    document.getElementById('popup-app-default')?.addEventListener('click', () => {
+        savedDefaultX = APP_DEFAULT_X;
+        savedDefaultY = APP_DEFAULT_Y;
+        localStorage.setItem('stormgen-spatial-default-x', APP_DEFAULT_X);
+        localStorage.setItem('stormgen-spatial-default-y', APP_DEFAULT_Y);
+        
+        spatialHandle.setAttribute('cx', APP_DEFAULT_X);
+        spatialHandle.setAttribute('cy', APP_DEFAULT_Y);
+        spatialHandleInner.setAttribute('cx', APP_DEFAULT_X);
+        spatialHandleInner.setAttribute('cy', APP_DEFAULT_Y);
+        
+        // Check if app default position is within headphone snap zone
+        const dx = APP_DEFAULT_X - centerX;
+        const dy = APP_DEFAULT_Y - centerY;
+        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distFromCenter <= HEADPHONE_SNAP_RADIUS) {
+            // Enable headphone mode if within snap radius
+            if (!isHeadphoneMode) {
+                isHeadphoneMode = true;
+                spatialHandle.classList.add('headphone-mode');
+                spatialHandleInner.classList.add('headphone-mode');
+                localStorage.setItem('stormgen-headphone-mode', 'true');
+            }
+        } else {
+            // Disable headphone mode if outside snap radius
+            if (isHeadphoneMode) {
+                isHeadphoneMode = false;
+                spatialHandle.classList.remove('headphone-mode');
+                spatialHandleInner.classList.remove('headphone-mode');
+                localStorage.setItem('stormgen-headphone-mode', 'false');
+            }
+        }
+        
+        updateSpatialAudio(APP_DEFAULT_X, APP_DEFAULT_Y);
+        updatePopupPosition(APP_DEFAULT_X, APP_DEFAULT_Y);
+        localStorage.setItem('stormgen-spatial-x', APP_DEFAULT_X);
+        localStorage.setItem('stormgen-spatial-y', APP_DEFAULT_Y);
+    });
     
     // Add event listeners for mouse
     spatialHandle.addEventListener('mousedown', startDragging);
@@ -2410,18 +2632,210 @@ window.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('touchmove', drag);
     window.addEventListener('touchend', stopDragging);
     
+    // ===== SPATIAL CONTROLLER RESET/SAVE FUNCTIONALITY =====
+    const resetBtn = document.getElementById('resetSpatialBtn');
+    const savDefaultBtn = document.getElementById('saveSpatialDefaultBtn');
+    const resetAppDefaultBtn = document.getElementById('resetToAppDefaultBtn');
+    
+    // Reset button: restore to saved default position
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            spatialHandle.setAttribute('cx', savedDefaultX);
+            spatialHandle.setAttribute('cy', savedDefaultY);
+            spatialHandleInner.setAttribute('cx', savedDefaultX);
+            spatialHandleInner.setAttribute('cy', savedDefaultY);
+            
+            // Check if reset position is within headphone snap zone
+            const dx = savedDefaultX - centerX;
+            const dy = savedDefaultY - centerY;
+            const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distFromCenter <= HEADPHONE_SNAP_RADIUS) {
+                // Enable headphone mode if within snap radius
+                if (!isHeadphoneMode) {
+                    isHeadphoneMode = true;
+                    spatialHandle.classList.add('headphone-mode');
+                    spatialHandleInner.classList.add('headphone-mode');
+                    localStorage.setItem('stormgen-headphone-mode', 'true');
+                }
+            } else {
+                // Disable headphone mode if outside snap radius
+                if (isHeadphoneMode) {
+                    isHeadphoneMode = false;
+                    spatialHandle.classList.remove('headphone-mode');
+                    spatialHandleInner.classList.remove('headphone-mode');
+                    localStorage.setItem('stormgen-headphone-mode', 'false');
+                }
+            }
+            
+            updateSpatialAudio(savedDefaultX, savedDefaultY);
+            localStorage.setItem('stormgen-spatial-x', savedDefaultX);
+            localStorage.setItem('stormgen-spatial-y', savedDefaultY);
+        });
+    }
+    
+    // Save current position as new default
+    if (savDefaultBtn) {
+        savDefaultBtn.addEventListener('click', () => {
+            const x = parseFloat(spatialHandle.getAttribute('cx'));
+            const y = parseFloat(spatialHandle.getAttribute('cy'));
+            savedDefaultX = x;
+            savedDefaultY = y;
+            localStorage.setItem('stormgen-spatial-default-x', x);
+            localStorage.setItem('stormgen-spatial-default-y', y);
+            // Visual feedback
+            savDefaultBtn.style.opacity = '0.5';
+            setTimeout(() => {
+                savDefaultBtn.style.opacity = '1';
+            }, 200);
+        });
+    }
+    
+    // Reset to app's original default
+    if (resetAppDefaultBtn) {
+        resetAppDefaultBtn.addEventListener('click', () => {
+            savedDefaultX = APP_DEFAULT_X;
+            savedDefaultY = APP_DEFAULT_Y;
+            localStorage.setItem('stormgen-spatial-default-x', APP_DEFAULT_X);
+            localStorage.setItem('stormgen-spatial-default-y', APP_DEFAULT_Y);
+            
+            spatialHandle.setAttribute('cx', APP_DEFAULT_X);
+            spatialHandle.setAttribute('cy', APP_DEFAULT_Y);
+            spatialHandleInner.setAttribute('cx', APP_DEFAULT_X);
+            spatialHandleInner.setAttribute('cy', APP_DEFAULT_Y);
+            
+            // Check if app default position is within headphone snap zone
+            const dx = APP_DEFAULT_X - centerX;
+            const dy = APP_DEFAULT_Y - centerY;
+            const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distFromCenter <= HEADPHONE_SNAP_RADIUS) {
+                // Enable headphone mode if within snap radius
+                if (!isHeadphoneMode) {
+                    isHeadphoneMode = true;
+                    spatialHandle.classList.add('headphone-mode');
+                    spatialHandleInner.classList.add('headphone-mode');
+                    localStorage.setItem('stormgen-headphone-mode', 'true');
+                }
+            } else {
+                // Disable headphone mode if outside snap radius
+                if (isHeadphoneMode) {
+                    isHeadphoneMode = false;
+                    spatialHandle.classList.remove('headphone-mode');
+                    spatialHandleInner.classList.remove('headphone-mode');
+                    localStorage.setItem('stormgen-headphone-mode', 'false');
+                }
+            }
+            
+            updateSpatialAudio(APP_DEFAULT_X, APP_DEFAULT_Y);
+            localStorage.setItem('stormgen-spatial-x', APP_DEFAULT_X);
+            localStorage.setItem('stormgen-spatial-y', APP_DEFAULT_Y);
+        });
+    }
+    
+    // Double-click spatial controller to reset
+    spatialSVG.addEventListener('dblclick', () => {
+        spatialHandle.setAttribute('cx', savedDefaultX);
+        spatialHandle.setAttribute('cy', savedDefaultY);
+        spatialHandleInner.setAttribute('cx', savedDefaultX);
+        spatialHandleInner.setAttribute('cy', savedDefaultY);
+        
+        // Check if reset position is within headphone snap zone
+        const dx = savedDefaultX - centerX;
+        const dy = savedDefaultY - centerY;
+        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distFromCenter <= HEADPHONE_SNAP_RADIUS) {
+            // Enable headphone mode if within snap radius
+            if (!isHeadphoneMode) {
+                isHeadphoneMode = true;
+                spatialHandle.classList.add('headphone-mode');
+                spatialHandleInner.classList.add('headphone-mode');
+                localStorage.setItem('stormgen-headphone-mode', 'true');
+            }
+        } else {
+            // Disable headphone mode if outside snap radius
+            if (isHeadphoneMode) {
+                isHeadphoneMode = false;
+                spatialHandle.classList.remove('headphone-mode');
+                spatialHandleInner.classList.remove('headphone-mode');
+                localStorage.setItem('stormgen-headphone-mode', 'false');
+            }
+        }
+        
+        updateSpatialAudio(savedDefaultX, savedDefaultY);
+        localStorage.setItem('stormgen-spatial-x', savedDefaultX);
+        localStorage.setItem('stormgen-spatial-y', savedDefaultY);
+    });
+    
+    // Right-click spatial controller to save as default
+    spatialSVG.addEventListener('contextmenu', (evt) => {
+        evt.preventDefault();
+        const x = parseFloat(spatialHandle.getAttribute('cx'));
+        const y = parseFloat(spatialHandle.getAttribute('cy'));
+        savedDefaultX = x;
+        savedDefaultY = y;
+        localStorage.setItem('stormgen-spatial-default-x', x);
+        localStorage.setItem('stormgen-spatial-default-y', y);
+        // Visual feedback
+        if (savDefaultBtn) {
+            savDefaultBtn.style.opacity = '0.5';
+            setTimeout(() => {
+                savDefaultBtn.style.opacity = '1';
+            }, 200);
+        }
+    });
+    
     // Occlusion slider removed: occlusion strength now driven purely by vertical position
     
     // Initialize: sync base values with current sliders before first update
     if (eqMidSlider) {
         baseMidEQ = parseFloat(eqMidSlider.value);
     }
-    if (musicReverbSlider) {
-        baseMusicReverb = parseFloat(musicReverbSlider.value);
+    // baseMusicReverb is initialized to 0 - spatial controller now fully controls reverb mix
+    
+    // Initialize position: restore from localStorage if available and valid, otherwise use saved default
+    let initX = parseFloat(localStorage.getItem('stormgen-spatial-x'));
+    let initY = parseFloat(localStorage.getItem('stormgen-spatial-y'));
+    
+    // Validate that coordinates are within circle bounds and are valid numbers
+    const isValidPosition = (x, y) => {
+        if (isNaN(x) || isNaN(y)) return false;
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+        return distFromCenter <= radius && x >= 15 && x <= 185 && y >= 15 && y <= 185;
+    };
+    
+    // Use saved position if valid, otherwise use saved default
+    if (!isValidPosition(initX, initY)) {
+        console.warn(`Invalid spatial position loaded: (${initX}, ${initY}), using saved default: (${savedDefaultX}, ${savedDefaultY})`);
+        initX = savedDefaultX;
+        initY = savedDefaultY;
+        // Clear bad localStorage values
+        localStorage.removeItem('stormgen-spatial-x');
+        localStorage.removeItem('stormgen-spatial-y');
     }
     
-    // Initialize position at center (neutral pan, no mid reduction, baseline reverb)
-    updateSpatialAudio(100, 100);
+    console.log(`Initializing spatial audio at: (${initX}, ${initY})`);
+    
+    // Update SVG handle position - explicitly set both outer and inner circles
+    spatialHandle.setAttribute('cx', initX);
+    spatialHandle.setAttribute('cy', initY);
+    spatialHandleInner.setAttribute('cx', initX);
+    spatialHandleInner.setAttribute('cy', initY);
+    
+    // Verify the positions were actually set
+    console.log(`Spatial handle set to: cx=${spatialHandle.getAttribute('cx')}, cy=${spatialHandle.getAttribute('cy')}`);
+    
+    // Initialize spatial audio with loaded position
+    updateSpatialAudio(initX, initY);
+    
+    // Initialize headphone mode visual state
+    if (isHeadphoneMode) {
+        spatialHandle.classList.add('headphone-mode');
+        spatialHandleInner.classList.add('headphone-mode');
+    }
     
     const stormIcon = weatherIcon; // Use weather icon for click interaction
     if (stormIcon) {
@@ -2632,8 +3046,10 @@ window.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('stormgen-waveform-opacity', value);
         });
         
-        // Initialize label
-        oscOpacityLabel.textContent = Math.round(parseFloat(oscOpacitySlider.value) * 100) + '%';
+        // Initialize visual state on load
+        const waveformOpacityValue = parseFloat(oscOpacitySlider.value);
+        oscSettings.lineOpacity = waveformOpacityValue;
+        oscOpacityLabel.textContent = Math.round(waveformOpacityValue * 100) + '%';
     }
     
     // Title Visibility
@@ -2723,9 +3139,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     thunderVolumeSlider.dispatchEvent(new Event('input'));
     lowpassFilterSlider.dispatchEvent(new Event('input'));
     musicVolumeSlider.dispatchEvent(new Event('input'));
-    musicLowpassSlider.dispatchEvent(new Event('input'));
     musicRoomSizeSlider.dispatchEvent(new Event('input'));
-    musicReverbSlider.dispatchEvent(new Event('input'));
     rainReverbSlider.dispatchEvent(new Event('input'));
     thunderReverbSlider.dispatchEvent(new Event('input'));
     

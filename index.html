@@ -25,87 +25,73 @@
         <div class="music-player-wrapper">
             <div class="standalone-panel music-player-panel">
                 
-                <details>
-                    <summary>
-                        <span class="summary-track-info">
-                            <span id="summary-track-name">No track loaded</span>
-                        </span>
-                    </summary>
-                    <div id="music-playback-section">
-                    <!-- Collapsible content (track display and volume) -->
-                    <div class="music-expanded-content">
-                        <div id="track-display-container">
-                            <div id="current-track-display">
-                                <span class="track-label">NOW PLAYING</span>
-                                <span class="track-name">No track loaded</span>
-                            </div>
-                            <div id="next-track-display">
-                                <span class="track-label">UP NEXT</span>
-                                <span class="track-name"></span>
-                            </div>
-                        </div>
-                        
-                        <!-- Music Playlist (nested dropdown) -->
-                        <details class="nested-panel">
-                            <summary>Music Playlist</summary>
-                            <div id="playlist-section">
-                                <div id="playlist-upload">
-                                    <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
-                                    <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
-                                    <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
-                                </div>
-                                <div id="playlist-container">
-                                    <div id="playlist-items"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Crossfade Control -->
-                            <div id="crossfade-section">
-                                <label for="crossfadeDuration">Crossfade Duration
-                                    <input type="range" id="crossfadeDuration" min="0" max="60" step="0.5" value="25">
-                                    <span id="crossfadeDurationLabel">25.0s</span>
-                                </label>
-                            </div>
-                        </details>
+                <!-- Track Display -->
+                <div id="track-display-container">
+                    <div id="current-track-display">
+                        <span class="track-label">NOW PLAYING</span>
+                        <span class="track-name">No track loaded</span>
                     </div>
+                    <div id="next-track-display">
+                        <span class="track-label">UP NEXT</span>
+                        <span class="track-name"></span>
+                    </div>
+                </div>
+                
+                <!-- Always visible controls (inside panel border) -->
+                <div id="music-controls-always-visible">
+                    <!-- Music Volume Slider -->
+                    <div id="music-volume-section">
+                        <label for="musicVolume">
+                            <div>Music Volume</div>
+                            <div style="text-align: right;"><span id="musicVolumeLabel">100</span></div>
+                        </label>
+                        <input type="range" id="musicVolume" min="0" max="100" value="100">
+                    </div>
+                    
+                    <!-- Playback Controls -->
+                    <div id="music-controls-row">
+                        <button id="musicPlayPauseBtn">▶ Play</button>
+                        <button id="musicStopBtn">⏹ Stop</button>
+                        <button id="musicPrevBtn">⏮ Prev</button>
+                        <button id="musicNextBtn">⏭ Next</button>
+                    </div>
+                    
+                    <!-- Track Position Slider -->
+                    <div id="track-position-section">
+                        <input type="range" id="trackPosition" min="0" max="100" value="0" step="0.1">
+                        <div id="track-time">
+                            <span id="currentTime">0:00</span>
+                            <span id="totalTime">0:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- End standalone-panel -->
+            
+            <!-- Music Playlist Panel -->
+            <details class="nested-panel" id="music-playlist-panel">
+                <summary>Music Playlist</summary>
+                <div id="playlist-section">
+                    <div id="playlist-upload">
+                        <input type="file" id="musicUpload" accept="audio/mp3,audio/mpeg" multiple style="display:none;">
+                        <button id="uploadMusicBtn" class="upload-btn">📁 Upload MP3</button>
+                        <button id="clearPlaylistBtn" class="clear-playlist-btn">🗑️ Clear All</button>
+                    </div>
+                    <div id="playlist-container">
+                        <div id="playlist-items"></div>
+                    </div>
+                </div>
+                
+                <!-- Crossfade Control -->
+                <div id="crossfade-section">
+                    <label for="crossfadeDuration">Crossfade Duration
+                        <input type="range" id="crossfadeDuration" min="0" max="60" step="0.5" value="25">
+                        <span id="crossfadeDurationLabel">25.0s</span>
+                    </label>
                 </div>
             </details>
             
-            <!-- Always visible controls (inside panel border) -->
-            <div id="music-controls-always-visible">
-                <!-- Music Volume Slider -->
-                <div id="music-volume-section">
-                    <label for="musicVolume">
-                        <div>Music Volume</div>
-                        <div style="text-align: right;"><span id="musicVolumeLabel">100</span></div>
-                    </label>
-                    <input type="range" id="musicVolume" min="0" max="100" value="100">
-                </div>
-                
-                <!-- Playback Controls -->
-                <div id="music-controls-row">
-                    <button id="musicPlayPauseBtn">▶ Play</button>
-                    <button id="musicStopBtn">⏹ Stop</button>
-                    <button id="musicPrevBtn">⏮ Prev</button>
-                    <button id="musicNextBtn">⏭ Next</button>
-                </div>
-                
-                <!-- Track Position Slider -->
-                <div id="track-position-section">
-                    <input type="range" id="trackPosition" min="0" max="100" value="0" step="0.1">
-                    <div id="track-time">
-                        <span id="currentTime">0:00</span>
-                        <span id="totalTime">0:00</span>
-                    </div>
-                </div>
-            </div>
-            </div> <!-- End standalone-panel -->
-        </div> <!-- End music-player-wrapper -->
-        
-        <div class="controls">
-            
-            <!-- Settings Panel -->
-            <details id="settings-panel">
+            <!-- Settings Panel - Part of Media Player -->
+            <details id="settings-panel" class="player-settings">
                 <summary>Settings</summary>
                 <div id="settings-controls">
                     <!-- Theme Sub-Panel -->
@@ -132,67 +118,6 @@
                         </div>
                     </details>
                     
-                    <!-- Storm Environment Sub-Panel -->
-                    <details class="nested-panel">
-                        <summary>Storm Environment</summary>
-                        <div id="environment-controls">
-                            <!-- Storm Presets -->
-                            <div class="preset-buttons">
-                                <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
-                                <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
-                            </div>
-                            
-                            <!-- Custom Preset Management -->
-                            <div id="custom-preset-section" style="margin-top: 12px;">
-                                <label>Custom Presets</label>
-                                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                    <input type="text" id="customPresetName" placeholder="Preset name..." style="flex: 1; padding: 6px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--theme-color); color: var(--theme-color); border-radius: 4px; font-family: 'Share Tech Mono', monospace;">
-                                    <button id="savePresetBtn" class="preset-btn" style="flex-shrink: 0;">💾 Save</button>
-                                </div>
-                                <div id="customPresetsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
-                            </div>
-                            
-                            <!-- Global Audio Filter -->
-                            <label style="margin-top: 12px;">Global Lowpass Filter
-                                <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
-                                <span id="lowpassLabel">22050 Hz</span>
-                            </label>
-                            
-                            <!-- Rain Options -->
-                            <label style="margin-top: 12px;">Rain Volume
-                                <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0">
-                            </label>
-                            <label for="rainReverb">Rain Reverb Mix
-                                <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
-                                <span id="rainReverbLabel">0.00</span>
-                            </label>
-                            
-                            <!-- Thunder Options -->
-                            <div class="thunder-options-label" style="margin-top: 16px;">
-                                <label>Thunder Volume
-                                    <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="1">
-                                </label>
-                                <label for="thunderReverb">Thunder Reverb Mix
-                                    <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
-                                    <span id="thunderReverbLabel">0.00</span>
-                                </label>
-                                <div class="thunder-options-frequency">
-                                    <label>Thunder Frequency</label>
-                                    <label>Min Interval
-                                        <input type="range" id="thunderMin" min="5" max="60" step="1" value="5">
-                                    </label>
-                                    <label>Max Interval
-                                        <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
-                                    </label>
-                                    <span id="frequencyLabel">5-60s</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Birds Control -->
-                            <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:16px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
-                        </div>
-                    </details>
-                    
                     <!-- Audio Effects & EQ Sub-Panel -->
                     <details class="nested-panel">
                         <summary>Audio Effects & EQ</summary>
@@ -215,34 +140,35 @@
                                     <svg id="spatial-controller-svg" viewBox="0 0 200 200">
                                         <!-- Background circle -->
                                         <circle cx="100" cy="100" r="85" class="spatial-circle-bg"/>
+                                        <!-- Headphone mode snap zone indicator (center circle) - always visible -->
+                                        <circle cx="100" cy="100" r="15" class="headphone-snap-zone" id="headphone-snap-zone"/>
                                         <!-- Center cross guides -->
                                         <line x1="100" y1="20" x2="100" y2="180" class="spatial-guide"/>
                                         <line x1="20" y1="100" x2="180" y2="100" class="spatial-guide"/>
-                                        <!-- Position labels -->
-                                        <text x="100" y="12" class="spatial-label" text-anchor="middle">Clear</text>
-                                        <text x="100" y="195" class="spatial-label" text-anchor="middle">Occluded</text>
+                                        <!-- Position labels - top-down head view -->
+                                        <text x="100" y="12" class="spatial-label" text-anchor="middle">Front</text>
+                                        <text x="100" y="195" class="spatial-label" text-anchor="middle">Back</text>
                                         <text x="8" y="105" class="spatial-label" text-anchor="start">L</text>
                                         <text x="192" y="105" class="spatial-label" text-anchor="end">R</text>
-                                        <!-- Draggable handle -->
-                                        <circle cx="100" cy="100" r="12" class="spatial-handle" id="spatial-handle"/>
-                                        <circle cx="100" cy="100" r="6" class="spatial-handle-inner"/>
+                                        <!-- Draggable handle - smaller size (r=8 outer, r=4 inner) -->
+                                        <circle cx="100" cy="57.5" r="8" class="spatial-handle" id="spatial-handle"/>
+                                        <circle cx="100" cy="57.5" r="4" class="spatial-handle-inner"/>
                                     </svg>
+                                    <!-- Popup menu for spatial controls -->
+                                    <div id="spatial-popup-menu" class="spatial-popup-menu">
+                                        <button id="popup-reset" title="Reset to saved default">↻</button>
+                                        <button id="popup-save" title="Save as default">💾</button>
+                                        <button id="popup-app-default" title="Reset to app default">🏠</button>
+                                    </div>
                                 </div>
-                                <label for="musicReverb">Music Reverb Mix
-                                    <input type="range" id="musicReverb" min="0" max="1" step="0.01" value="0.3">
-                                    <span id="musicReverbLabel">0.3</span>
-                                </label>
-                                <label for="musicLowpass">Music Lowpass Filter
-                                    <input type="range" id="musicLowpass" min="420" max="22050" step="1" value="22050">
-                                    <span id="musicLowpassLabel">22050 Hz</span>
-                                </label>
+
                                 <label for="musicRoomSize">Room Size
                                     <input type="range" id="musicRoomSize" min="0.001" max="0.10" step="0.001" value="0.02">
                                     <span id="musicRoomSizeLabel">0.020</span>
                                 </label>
                                 <div class="spatial-info">
-                                    <span>Pan: <span id="spatialPanValue">Center</span></span>
-                                    <span>Mid EQ: <span id="spatialFilterValue">0.0 dB</span></span>
+                                    <span>Position: <span id="spatialPanValue">Center (Side)</span></span>
+                                    <span>Reverb: <span id="spatialFilterValue">Distance: 0%</span></span>
                                 </div>
                             </div>
                             
@@ -328,14 +254,14 @@
                             
                             <!-- Waveform Opacity -->
                             <label for="oscOpacity">Waveform Visibility
-                                <input type="range" id="oscOpacity" min="0" max="1" step="0.05" value="0.5">
-                                <span id="oscOpacityLabel">50%</span>
+                                <input type="range" id="oscOpacity" min="0" max="1" step="0.05" value="1">
+                                <span id="oscOpacityLabel">100%</span>
                             </label>
                             
                             <!-- Title Visibility -->
                             <label for="oscTitleOpacity">Title Visibility
-                                <input type="range" id="oscTitleOpacity" min="0" max="1" step="0.05" value="1">
-                                <span id="oscTitleOpacityLabel">100%</span>
+                                <input type="range" id="oscTitleOpacity" min="0" max="1" step="0.05" value="0">
+                                <span id="oscTitleOpacityLabel">0%</span>
                             </label>
                             
                             <!-- Fade Trail Effect -->
@@ -360,11 +286,9 @@
                             <label>Lightning Effect
                                 <select id="oscLightningMode" style="margin-left: 4px; padding: 4px 8px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--theme-color); color: var(--secondary-accent); border-radius: 3px; font-family: 'Share Tech Mono', monospace; cursor: pointer;">
                                     <option value="off">Off</option>
-                                    <option value="outline">Outline (Behind)</option>
-                                    <option value="invert">Invert (Front)</option>
-                                    <option value="bright">Bright Flash (Front)</option>
-                                    <option value="bright-back" selected>Bright Flash (Back)</option>
-                                    <option value="background">Background Only Flash</option>
+                                    <option value="invert">Invert Flash</option>
+                                    <option value="bright" selected>Flash</option>
+                                    <option value="background">Background Flash</option>
                                 </select>
                             </label>
                             
@@ -377,9 +301,73 @@
                     </details>
                 </div>
             </details>
+        </div> <!-- End music-player-wrapper -->
+        
+        <div class="controls">
             
             <!-- Start Storm Button -->
             <button id="stormToggleBtn" style="width:100%;height:48px;margin-top:12px;">Start Storm</button>
+            
+            <!-- Storm Environment Panel -->
+            <details class="nested-panel" style="margin-top:12px;">
+                <summary>Storm Environment</summary>
+                <div id="environment-controls">
+                    <!-- Storm Presets -->
+                    <div class="preset-buttons">
+                        <button class="preset-btn" id="presetIndoorCozy">🏠 Indoor Cozy</button>
+                        <button class="preset-btn" id="presetOutdoor">🌳 Outdoor</button>
+                    </div>
+                    
+                    <!-- Custom Preset Management -->
+                    <div id="custom-preset-section" style="margin-top: 12px;">
+                        <label>Custom Presets</label>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <input type="text" id="customPresetName" placeholder="Preset name..." style="flex: 1; padding: 6px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--theme-color); color: var(--theme-color); border-radius: 4px; font-family: 'Share Tech Mono', monospace;">
+                            <button id="savePresetBtn" class="preset-btn" style="flex-shrink: 0;">💾 Save</button>
+                        </div>
+                        <div id="customPresetsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
+                    </div>
+                    
+                    <!-- Global Audio Filter -->
+                    <label style="margin-top: 12px;">Global Lowpass Filter
+                        <input type="range" id="lowpassFilter" min="420" max="22050" step="1" value="22050">
+                        <span id="lowpassLabel">22050 Hz</span>
+                    </label>
+                    
+                    <!-- Rain Options -->
+                    <label style="margin-top: 12px;">Rain Volume
+                        <input type="range" id="rainVolume" min="0" max="1" step="0.01" value="0">
+                    </label>
+                    <label for="rainReverb">Rain Reverb Mix
+                        <input type="range" id="rainReverb" min="0" max="1" step="0.01" value="0">
+                        <span id="rainReverbLabel">0.00</span>
+                    </label>
+                    
+                    <!-- Thunder Options -->
+                    <div class="thunder-options-label" style="margin-top: 16px;">
+                        <label>Thunder Volume
+                            <input type="range" id="thunderVolume" min="0" max="1" step="0.01" value="1">
+                        </label>
+                        <label for="thunderReverb">Thunder Reverb Mix
+                            <input type="range" id="thunderReverb" min="0" max="1" step="0.01" value="0">
+                            <span id="thunderReverbLabel">0.00</span>
+                        </label>
+                        <div class="thunder-options-frequency">
+                            <label>Thunder Frequency</label>
+                            <label>Min Interval
+                                <input type="range" id="thunderMin" min="5" max="60" step="1" value="5">
+                            </label>
+                            <label>Max Interval
+                                <input type="range" id="thunderMax" min="5" max="60" step="1" value="60">
+                            </label>
+                            <span id="frequencyLabel">5-60s</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Birds Control -->
+                    <button id="birdsMuteBtn" class="birds-mute-btn" style="margin-top:16px; font-size:0.98em; padding:8px 18px; width:100%;">Mute Birds</button>
+                </div>
+            </details>
 
         </div>
     </div>
