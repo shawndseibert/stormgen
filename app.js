@@ -75,13 +75,12 @@ spatialWetLowpass.type = 'lowpass';
 spatialWetLowpass.frequency.value = 22050; // Start with no filtering
 
 // Mid-side processing for directional presence when behind listener
-// When sound is behind, the mid (directional) information is reduced while side (reflections) stays full
-const splitter = audioCtx.createChannelSplitter(2);
-const merger = audioCtx.createChannelMerger(2);
-const midGain = audioCtx.createGain();
-const sideGain = audioCtx.createGain();
-midGain.gain.value = 1; // Full mid (direct sound)
-sideGain.gain.value = 1; // Full side (reflections)
+// Create a mid-range filter for M/S processing (affects centered info, not stereo width)
+const midRangeFilter = audioCtx.createBiquadFilter();
+midRangeFilter.type = 'peaking';
+midRangeFilter.frequency.value = 1000; // Center around 1000 Hz for presence region
+midRangeFilter.Q.value = 0.5; // Wide bandwidth to catch 500-2000 Hz range
+midRangeFilter.gain.value = 0; // Will be adjusted based on spatial position
 
 // Store base values for spatial audio adjustments
 let baseMidEQ = 0;
@@ -103,12 +102,12 @@ musicEQBass.gain.value = 0;
 
 musicEQMidBass.type = 'peaking';
 musicEQMidBass.frequency.value = 500;
-musicEQMidBass.Q.value = 1.0;
+musicEQMidBass.Q.value = 0.5; // Lower Q = wider bandwidth to cover more of the presence region
 musicEQMidBass.gain.value = 0;
 
 musicEQMid.type = 'peaking';
 musicEQMid.frequency.value = 1500;
-musicEQMid.Q.value = 1.0;
+musicEQMid.Q.value = 0.7; // Lower Q for wider bandwidth
 musicEQMid.gain.value = 0;
 
 musicEQMidTreble.type = 'peaking';
@@ -166,12 +165,12 @@ musicEQMid.connect(musicEQMidTreble);
 musicEQMidTreble.connect(musicEQTreble);
 
 // Split after EQ: DRY and WET paths split here with NO shared spatial processing
-// Dry path: EQ -> panner -> spatial dry lowpass -> spatial bass shelf -> dry gain
+// Dry path: EQ -> panner -> spatial dry lowpass -> spatial bass shelf -> dry gain -> mid-range filter -> analyser
 // Wet path: EQ -> reverb -> wet gain -> reverb bass (original unprocessed signal for room reflections)
 musicEQTreble.connect(musicPannerNode);
 musicPannerNode.connect(spatialDryLowpass);
 spatialDryLowpass.connect(spatialDryBassShelf);
-spatialDryBassShelf.connect(musicDryGain).connect(analyser);
+spatialDryBassShelf.connect(musicDryGain).connect(midRangeFilter).connect(analyser);
 
 // Reverb path: EQ (unprocessed by spatial filters) -> reverb -> wet gain -> reverb bass -> analyser
 musicEQTreble.connect(musicReverbNode).connect(musicWetGain).connect(musicReverbBass).connect(analyser);
@@ -535,6 +534,19 @@ function playRain() {
 
 function startRainLayer() {
     if (!rainBuffer || !isPlaying) return;
+    
+    // Limit concurrent rain sources to prevent mobile audio glitches
+    // Mobile devices have limited audio processing power
+    const MAX_RAIN_SOURCES = 3;
+    if (rainSources.length >= MAX_RAIN_SOURCES) {
+        // Still schedule the next layer, but don't create a new source yet
+        const duration = rainBuffer.duration;
+        const nextLayerDelay = (0.5 + Math.random() * 0.5) * duration * 1000;
+        setTimeout(() => {
+            startRainLayer();
+        }, nextLayerDelay);
+        return;
+    }
     
     const source = audioCtx.createBufferSource();
     source.buffer = rainBuffer;
@@ -1622,8 +1634,12 @@ function stopStorm() {
         thunderTimeout = null;
     }
     
-    // Set rain audio to 0 without changing slider (preserves user setting)
-    rainGainNode.gain.value = 0;
+    // Smooth fade out rain audio (instead of abrupt stop that could cause clicks)
+    const rampTime = 0.1;
+    rainGainNode.gain.exponentialRampToValueAtTime(
+        0.0001,
+        audioCtx.currentTime + rampTime
+    );
     updateWeatherIcon(); // Will show sun icon since isPlaying = false
     updateBirdsVolume();
     
@@ -1808,7 +1824,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     // ===== RAIN VOLUME =====
     
     rainVolumeSlider.addEventListener('input', () => {
-        rainGainNode.gain.value = parseFloat(rainVolumeSlider.value);
+        const targetVolume = parseFloat(rainVolumeSlider.value);
+        const rampTime = 0.05; // 50ms ramp for smooth transitions without lag
+        rainGainNode.gain.exponentialRampToValueAtTime(
+            Math.max(targetVolume, 0.0001), // Avoid zero for exponential ramp
+            audioCtx.currentTime + rampTime
+        );
         updateBirdsVolume();
         updateWeatherIcon();
     });
@@ -1816,7 +1837,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     // ===== THUNDER VOLUME =====
     
     thunderVolumeSlider.addEventListener('input', () => {
-        thunderGainNode.gain.value = parseFloat(thunderVolumeSlider.value);
+        const targetVolume = parseFloat(thunderVolumeSlider.value);
+        const rampTime = 0.05; // 50ms ramp for smooth transitions
+        thunderGainNode.gain.exponentialRampToValueAtTime(
+            Math.max(targetVolume, 0.0001), // Avoid zero for exponential ramp
+            audioCtx.currentTime + rampTime
+        );
     });
     
     const thunderMinSlider = document.getElementById('thunderMin');
@@ -1842,12 +1868,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     lowpassFilterSlider.addEventListener('input', () => {
         const cutoff = parseFloat(lowpassFilterSlider.value);
         lowpassLabel.textContent = cutoff + ' Hz';
-        lowpassFilterNode.frequency.value = cutoff;
+        const rampTime = 0.05; // 50ms ramp for smooth transitions
+        lowpassFilterNode.frequency.exponentialRampToValueAtTime(
+            cutoff,
+            audioCtx.currentTime + rampTime
+        );
         
         const min = parseFloat(lowpassFilterSlider.min);
         const max = parseFloat(lowpassFilterSlider.max);
         const boost = 8 * (1 - (cutoff - min) / (max - min));
-        rainEQNode.gain.value = boost;
+        rainEQNode.gain.exponentialRampToValueAtTime(
+            Math.max(boost, 0.0001),
+            audioCtx.currentTime + rampTime
+        );
     });
     
     const birdsMuteBtn = document.getElementById('birdsMuteBtn');
@@ -2022,7 +2055,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (eqBassSlider) {
         eqBassSlider.addEventListener('input', () => {
             const gain = parseFloat(eqBassSlider.value);
-            musicEQBass.gain.value = gain;
+            const rampTime = 0.05;
+            musicEQBass.gain.exponentialRampToValueAtTime(
+                Math.max(Math.pow(10, gain / 20), 0.0001),
+                audioCtx.currentTime + rampTime
+            );
             if (eqBassLabel) eqBassLabel.textContent = gain.toFixed(1) + ' dB';
         });
     }
@@ -2030,7 +2067,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (eqMidBassSlider) {
         eqMidBassSlider.addEventListener('input', () => {
             const gain = parseFloat(eqMidBassSlider.value);
-            musicEQMidBass.gain.value = gain;
+            const rampTime = 0.05;
+            musicEQMidBass.gain.exponentialRampToValueAtTime(
+                Math.max(Math.pow(10, gain / 20), 0.0001),
+                audioCtx.currentTime + rampTime
+            );
             if (eqMidBassLabel) eqMidBassLabel.textContent = gain.toFixed(1) + ' dB';
         });
     }
@@ -2039,6 +2080,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         eqMidSlider.addEventListener('input', () => {
             const gain = parseFloat(eqMidSlider.value);
             baseMidEQ = gain; // Update base value
+            const rampTime = 0.05;
             
             // Re-apply spatial audio to add the spatial occlusion on top of new base
             if (spatialHandle) {
@@ -2047,7 +2089,10 @@ window.addEventListener('DOMContentLoaded', async () => {
                 updateSpatialAudio(x, y);
             } else {
                 // If no spatial handle, just update the audio node directly
-                musicEQMid.gain.value = gain;
+                musicEQMid.gain.exponentialRampToValueAtTime(
+                    Math.max(Math.pow(10, gain / 20), 0.0001),
+                    audioCtx.currentTime + rampTime
+                );
                 if (eqMidLabel) eqMidLabel.textContent = gain.toFixed(1) + ' dB';
             }
         });
@@ -2056,7 +2101,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (eqMidTrebleSlider) {
         eqMidTrebleSlider.addEventListener('input', () => {
             const gain = parseFloat(eqMidTrebleSlider.value);
-            musicEQMidTreble.gain.value = gain;
+            const rampTime = 0.05;
+            musicEQMidTreble.gain.exponentialRampToValueAtTime(
+                Math.max(Math.pow(10, gain / 20), 0.0001),
+                audioCtx.currentTime + rampTime
+            );
             if (eqMidTrebleLabel) eqMidTrebleLabel.textContent = gain.toFixed(1) + ' dB';
         });
     }
@@ -2064,7 +2113,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (eqTrebleSlider) {
         eqTrebleSlider.addEventListener('input', () => {
             const gain = parseFloat(eqTrebleSlider.value);
-            musicEQTreble.gain.value = gain;
+            const rampTime = 0.05;
+            musicEQTreble.gain.exponentialRampToValueAtTime(
+                Math.max(Math.pow(10, gain / 20), 0.0001),
+                audioCtx.currentTime + rampTime
+            );
             if (eqTrebleLabel) eqTrebleLabel.textContent = gain.toFixed(1) + ' dB';
         });
     }
@@ -2104,13 +2157,35 @@ window.addEventListener('DOMContentLoaded', async () => {
         } else {
             // Update user music gain node if it exists (only when not crossfading)
             if (userMusicGain) {
-                userMusicGain.gain.value = volume;
+                const rampTime = 0.05;
+                userMusicGain.gain.exponentialRampToValueAtTime(
+                    Math.max(volume, 0.0001),
+                    audioCtx.currentTime + rampTime
+                );
             }
         }
         
-        // Update default music volume
+        // Update default music volume with smooth ramping
         if (defaultMusicAudio) {
-            defaultMusicAudio.volume = volume;
+            // Store interval ID if we need to clear it
+            if (defaultMusicAudio._volumeRampInterval) {
+                clearInterval(defaultMusicAudio._volumeRampInterval);
+            }
+            
+            const rampSteps = 10;
+            const startVolume = defaultMusicAudio.volume;
+            const diff = volume - startVolume;
+            let step = 0;
+            
+            defaultMusicAudio._volumeRampInterval = setInterval(() => {
+                step++;
+                const progress = step / rampSteps;
+                defaultMusicAudio.volume = startVolume + (diff * progress);
+                if (step >= rampSteps) {
+                    clearInterval(defaultMusicAudio._volumeRampInterval);
+                    defaultMusicAudio.volume = volume;
+                }
+            }, 5);
         }
         
         // Sync with playback volume slider
@@ -2147,7 +2222,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     function setReverbBassBoost(mix, filterNode, maxDb) {
         const clamped = Math.min(Math.max(mix, 0), 1);
-        filterNode.gain.value = clamped * maxDb;
+        const targetGain = clamped * maxDb;
+        const rampTime = 0.05;
+        filterNode.gain.exponentialRampToValueAtTime(
+            Math.max(targetGain, 0.0001),
+            audioCtx.currentTime + rampTime
+        );
     }
 
     function updateMusicReverbMix(mix, fromSpatial = false) {
@@ -2169,7 +2249,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (musicReverbLabel) {
             musicReverbLabel.textContent = clamped.toFixed(2);
         }
-        setReverbBassBoost(clamped, musicReverbBass, 7);
+        setReverbBassBoost(clamped, musicReverbBass, 10); // Increased from 7 to 10 dB for more bass presence in reverb when behind
         
         // Update baseMusicReverb when set from spatial controller
         if (fromSpatial) {
@@ -2181,8 +2261,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     
     rainReverbSlider.addEventListener('input', () => {
         const mix = parseFloat(rainReverbSlider.value);
-        rainWetGain.gain.value = mix;
-        rainDryGain.gain.value = 1 - mix;
+        const rampTime = 0.05;
+        rainWetGain.gain.exponentialRampToValueAtTime(
+            Math.max(mix, 0.0001),
+            audioCtx.currentTime + rampTime
+        );
+        rainDryGain.gain.exponentialRampToValueAtTime(
+            Math.max(1 - mix, 0.0001),
+            audioCtx.currentTime + rampTime
+        );
         rainReverbLabel.textContent = mix.toFixed(2);
         setReverbBassBoost(mix, rainReverbBass, 6);
     });
@@ -2191,8 +2278,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     
     thunderReverbSlider.addEventListener('input', () => {
         const mix = parseFloat(thunderReverbSlider.value);
-        thunderWetGain.gain.value = mix;
-        thunderDryGain.gain.value = 1 - mix;
+        const rampTime = 0.05;
+        thunderWetGain.gain.exponentialRampToValueAtTime(
+            Math.max(mix, 0.0001),
+            audioCtx.currentTime + rampTime
+        );
+        thunderDryGain.gain.exponentialRampToValueAtTime(
+            Math.max(1 - mix, 0.0001),
+            audioCtx.currentTime + rampTime
+        );
         thunderReverbLabel.textContent = mix.toFixed(2);
         setReverbBassBoost(mix, thunderReverbBass, 12);
     });
@@ -2352,14 +2446,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         // When audio is behind listener, the head blocks direct sound (mid/mono information)
         // Head shadow reduces presence more than room reflections (side/stereo information)
         // This simulates realistic head-related transfer function (HRTF) behavior
-        let midReduction = 1.0; // Default: full presence in front
-        
-        // Start reducing mid presence when behind center line (normalizedY > 0.15)
-        if (normalizedY > 0.15) {
-            // Smooth transition from center line to directly behind
-            // At normalizedY=1.0 (directly behind), midReduction=0.30 (70% reduction of presence)
-            midReduction = Math.max(0.30, 1.0 - (normalizedY - 0.15) * (0.70 / 0.85));
-        }
+        // NOTE: Keep at 1.0 (no volume reduction) - volume should stay consistent as handle moves
+        const midReduction = 1.0;
         
         // Apply volume attenuation with smoothing to prevent clicks
         const baseVolume = parseFloat(document.getElementById('musicVolume').value) / 100;
@@ -2386,76 +2474,74 @@ window.addEventListener('DOMContentLoaded', async () => {
         // Reduced from previous (0.15 to 0.75) to give more control at close distances
         const baselineRoomReverb = 0.10 + (roomSizeFactor * 0.4);
         
-        // Room reverb is constant - doesn't change with spatial position of the source
-        // Reverb represents ambient room reflections which are omni-directional and unaffected by source location
+        // Reverb increases when sound is behind listener to create distance perception
+        // When sound is blocked by head (behind), more ambient reflections are audible vs direct sound
         // Only apply spatial reverb when NOT in headphone mode (to preserve user's preference when switching songs)
         let spatialReverb;
         if (isHeadphoneMode) {
             // In headphone mode: reverb is off
             spatialReverb = 0;
         } else {
-            // In spatial mode: use room-based reverb only if user has actively positioned the handle
-            // This preserves the initial reverb state when switching songs
-            const baselineRoomReverb = 0.10 + (roomSizeFactor * 0.4);
-            spatialReverb = Math.min(0.85, Math.max(0.05, baselineRoomReverb));
+            // In spatial mode: subtle reverb increase when behind listener
+            // Keep reverb as the main spatial cue - other effects should be minimal
+            let distanceReverb = 0;
+            if (normalizedY > 0.15) {
+                // Very gradual reverb increase - the main spatial indicator
+                const behindProgress = (normalizedY - 0.15) / 0.85;
+                const taperCurve = Math.pow(behindProgress, 0.75);
+                distanceReverb = taperCurve * 0.08; // Very subtle - just 0.08 max
+            }
+            spatialReverb = Math.min(0.85, Math.max(0.05, baselineRoomReverb + distanceReverb));
         }
         updateMusicReverbMix(spatialReverb, true);
         
         // ===== HEAD SHADOW LOWPASS FILTER =====
-        // When sound is behind the listener (below center line), the head blocks high frequencies
-        // Front (top half) = full frequency, Back (bottom half) = lowpass filtered
-        
-        // Calculate normalized Y position: -1 at front, 0 at center, +1 at back
-        // We want a smooth transition when crossing the center line (Y = 0)
-        
-        // Create a very gradual transition zone - wider for smoother frequency sweep
-        // Lowpass transitions from front (no filtering) to back (muffled) over a wide range
-        // This creates a more natural gradual change as sound moves around listener's head
+        // Very subtle high-frequency roll-off when behind - almost imperceptible
         let lowpassFreq;
         
         if (normalizedY < -0.4) {
             // Well in front: no filtering
             lowpassFreq = 22050;
         } else if (normalizedY > 0.4) {
-            // Well behind: aggressive muffling
-            lowpassFreq = 2000;
+            // Well behind: very gentle roll-off (from 22050 to 8000 Hz is much subtler)
+            lowpassFreq = 8000;
         } else {
-            // Gradual transition from -0.4 to +0.4 (80% of the space)
-            // Map to 0-1 range: (-0.4 to +0.4) -> (0 to 1)
+            // Gradual transition
             const t = (normalizedY + 0.4) / 0.8;
-            // Use smoothstep curve for natural easing
             const smoothedT = t * t * (3 - 2 * t);
-            // Interpolate frequency from 22050 Hz to 2000 Hz
-            lowpassFreq = 22050 - (smoothedT * (22050 - 2000));
+            lowpassFreq = 22050 - (smoothedT * (22050 - 8000));
         }
         
-        // Apply lowpass to ONLY dry path (reverb stays bright for natural room sound)
+        // Apply lowpass to ONLY dry path (reverb stays bright)
         spatialDryLowpass.frequency.setTargetAtTime(lowpassFreq, audioCtx.currentTime, 0.05);
         
         // ===== SCOOPED SOUND WHEN BEHIND (Bass boost for U-shaped EQ) =====
-        // When behind listener: mids are reduced (by midReduction), highs are reduced (by lowpass)
-        // To complete the scoop, boost the bass for a more realistic diffuse sound
-        let bassBoostGain = 0; // No boost in front
+        // Minimal bass boost - keep it subtle so it doesn't interfere with spinning effect
+        let bassBoostGain = 0; 
         if (normalizedY > 0.15) {
-            // Gradually increase bass boost as audio moves behind
-            // Max +6dB boost when directly behind for pronounced scooped effect
             const behindProgress = (normalizedY - 0.15) / 0.85;
-            bassBoostGain = behindProgress * 6.0; // 0 to 6 dB
+            const taperCurve = Math.pow(behindProgress, 0.75);
+            bassBoostGain = taperCurve * 1.5; // Very subtle - just 1.5 dB max
         }
         spatialDryBassShelf.gain.setTargetAtTime(bassBoostGain, audioCtx.currentTime, 0.05);
         
-        // ===== SUBTLE MID EQ ADJUSTMENT =====
-        // Very subtle - just distance attenuation of mids, no head shadow
-        const roomMidPreservation = roomSizeFactor * 1.5;
-        const midEQReduction = normalizedDistance * (2 - roomMidPreservation); // Up to 1 dB in small rooms, 2 dB in large
-        const adjustedMidEQ = baseMidEQ - midEQReduction;
+        // ===== MID-RANGE REDUCTION FOR HEAD SHADOW EFFECT =====
+        // When sound is behind listener, reduce the presence region (500-2000 Hz)
+        // This is applied to the FULL stereo signal based on spatial Y position (behind)
+        // Not based on stereo channel - preserves stereo width while removing centered info
+        let midRangeGain = 0; // Start at 0 dB (no reduction) when in front
         
-        // Smooth EQ transitions to prevent abrupt changes
-        musicEQMid.gain.setTargetAtTime(adjustedMidEQ, audioCtx.currentTime, 0.02);
-        
-        if (eqMidLabel) {
-            eqMidLabel.textContent = adjustedMidEQ.toFixed(1) + ' dB';
+        if (normalizedY > 0.15) {
+            // Progressively reduce mid-range as sound moves behind
+            const behindProgress = (normalizedY - 0.15) / 0.85;
+            const taperCurve = Math.pow(behindProgress, 0.75);
+            // Reduce mid-range from 0 dB to -12 dB at back
+            // This removes presence/voice information while keeping bass and reflections
+            midRangeGain = -(taperCurve * 12.0);
         }
+        
+        // Apply mid-range filter gain - affects both stereo channels equally
+        midRangeFilter.gain.setTargetAtTime(midRangeGain, audioCtx.currentTime, 0.05);
         
         // ===== UPDATE UI INDICATORS =====
         // Pan indicator with directional awareness
