@@ -148,7 +148,8 @@ rainGainNode.connect(rainEQNode);
 rainEQNode.connect(lowpassFilterNode);
 // Rain reverb routing: split to wet (reverb) and dry paths BEFORE the shared lowpass
 rainEQNode.connect(rainDryGain).connect(lowpassFilterNode);
-rainEQNode.connect(rainReverbNode).connect(rainWetGain).connect(rainReverbBass).connect(lowpassFilterNode);
+// TEMPORARILY DISABLED: rainReverbNode convolver for buffer issue debugging
+// rainEQNode.connect(rainReverbNode).connect(rainWetGain).connect(rainReverbBass).connect(lowpassFilterNode);
 // Final rain output goes through lowpass to analyzer and destination
 lowpassFilterNode.connect(analyser);
 
@@ -537,7 +538,7 @@ function startRainLayer() {
     
     // Limit concurrent rain sources to prevent mobile audio glitches
     // Mobile devices have limited audio processing power
-    const MAX_RAIN_SOURCES = 3;
+    const MAX_RAIN_SOURCES = 1;
     if (rainSources.length >= MAX_RAIN_SOURCES) {
         // Still schedule the next layer, but don't create a new source yet
         const duration = rainBuffer.duration;
@@ -548,20 +549,29 @@ function startRainLayer() {
         return;
     }
     
+    // Create a dedicated gain node for this rain source to enable smooth fade-in
+    const rainSourceGain = audioCtx.createGain();
+    rainSourceGain.gain.value = 0; // Start at silence
+    rainSourceGain.connect(rainGainNode);
+    
     const source = audioCtx.createBufferSource();
     source.buffer = rainBuffer;
     source.loop = false; // No loop - we'll manually overlap
-    source.connect(rainGainNode);
+    source.connect(rainSourceGain);
     
     const duration = rainBuffer.duration;
-    
-    // Calculate random start time for next layer (between 50% and 100% of duration)
-    // This creates natural waves - sometimes layers overlap more, sometimes less
-    const nextLayerDelay = (0.5 + Math.random() * 0.5) * duration * 1000;
+    const fadeInTime = 0.05; // 50ms fade-in to prevent clicks
     
     // Start this layer
     source.start(0);
     rainSources.push(source);
+    
+    // Smooth fade-in envelope to prevent clicks when layers start
+    rainSourceGain.gain.setTargetAtTime(1.0, audioCtx.currentTime, fadeInTime);
+    
+    // Calculate random start time for next layer (between 50% and 100% of duration)
+    // This creates natural waves - sometimes layers overlap more, sometimes less
+    const nextLayerDelay = (0.5 + Math.random() * 0.5) * duration * 1000;
     
     // Schedule next layer before this one ends
     const scheduleTimeout = setTimeout(() => {
@@ -578,6 +588,7 @@ function startRainLayer() {
         }
         try {
             source.disconnect();
+            rainSourceGain.disconnect();
         } catch(e) {}
     };
     
